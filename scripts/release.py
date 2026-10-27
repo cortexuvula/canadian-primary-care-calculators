@@ -41,7 +41,7 @@ def main():
             raise ValueError('release files must be regular files: ' + name)
     contents = {name: git('show', f'{sha}:{name}') for name in files}
     version = json.loads(contents['package.json'])['version']
-    if version != '0.3.0':
+    if version != '0.4.0':
         raise ValueError('review release version before changing the release script')
     expected = contents['runtime.sha256'].decode().strip()
     if contents['plugin.js'] != contents['desktop/plugin.js'] or digest(contents['plugin.js']) != expected:

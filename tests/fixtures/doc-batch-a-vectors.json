@@ -1,0 +1,1714 @@
+{
+  "_meta": {
+    "title": "Canadian Primary Care Batch A - full-precision independent vectors (11 additions)",
+    "author": "doc (clinical research bot)",
+    "accessDate": "2026-10-27",
+    "baselineRepo": "aaf0eb9f190c890c71bbbb8cc3148c18bf32caab",
+    "sourceBrief": "Clinical contract supplied independently by Doc; public implementation summary: docs/batch-a-clinical-guide.md",
+    "computation": "Independent Python 3 math stdlib (no production code import, no patient data).",
+    "precisionNote": "Numeric outputs are IEEE-754 binary64 (double), serialized as shortest round-trip decimal (json.dump). Integer scores compare exactly. Derived floats compare EXACTLY only when the implementation mirrors pinnedOperationOrder; otherwise assert |actual-expected| <= 1e-9 absolute (or 1e-12 relative).",
+    "pinnedOperationOrder": {
+      "ariscat": "sum of 7 point terms per Canet Table 6 (age<=50:0/51-80:3/>80:16; SpO2>=96:0/91-95:8/<=90:24; respInf:17; anaemia Hb<=100 g/L:11; incision peripheral:0/upper-abdominal:15/intrathoracic:24; duration <=2h:0/2-3h:16/>3h:23; emergency:8). Risk class <26 Low / 26-44 Intermediate / >=45 High.",
+      "apgar": "appearance+pulse+grimace+activity+respiration (each 0-2)",
+      "ciwa-ar": "sum of 10 item scores (9 x 0-7 + orientation 0-4)",
+      "westley-croup": "consciousness(0/5)+cyanosis(0/4/5)+stridor(0/1/2)+airEntry(0/1/2)+retractions(0/1/2/3)",
+      "aec": "wbc * eosinophils / 100 ; aecPerMicrolitre = aec * 1000",
+      "ga-from-edd": "daysToEdd=(edd-asOf).days; gestationalDays=280-daysToEdd; weeks=//7; days=%7",
+      "maintenance-fluids": "w<=10:100*w ; w<=20:1000+50*(w-10) ; else 1500+20*(w-20)",
+      "posttest-lr": "odds=p/(1-p); odds*=prod(LRs); post=odds/(1+odds)",
+      "posttest-sens-spec": "positive LR=sens/(1-spec); negative LR=(1-sens)/spec; post=(odds*LR)/(1+odds*LR)",
+      "urine-acr": "alb(mg/L)/creat(mmol/L) [mg/mmol]; alb(mg/L)/creat(mg/L)*1000 [mg/g]",
+      "urine-pcr": "protein(mg/L)/creat(mmol/L) [mg/mmol]; protein(mg/L)/creat(mg/L)*1000 [mg/g]"
+    },
+    "constants": {
+      "creatinineMwGPerMol": 113.12,
+      "mgGPerMgMmol": 8.84016973125884,
+      "mgMmolPerMgG": 0.11312,
+      "naegeleDays": 280,
+      "anaemiaHbGL": 100.0
+    },
+    "sourceCorrections": {
+      "ariscatPmid": "21045639 (NOT 21145643 - that resolves to a psychology paper). Canet J, Gallart L, Gomar C et al., Anesthesiology 2010;113(6):1338-50.",
+      "dailyVs421": "Daily Holliday-Segar (100/50/20 mL/kg/day) is NOT the 4-2-1 hourly shortcut x24 (96/48/24).",
+      "creatinineFactor": "Use MW 113.12 (exact bridge 0.11312 / 8.84017...). KDIGO '0.113' and '3 mg/mmol ~ 30 mg/g' are rounded staging approximations, not exact conversion."
+    }
+  },
+  "vectors": {
+    "ariscat": {
+      "name": "ARISCAT (Canet) preoperative pulmonary risk index in adults",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "all-zero baseline",
+          "inputs": {
+            "age": 40,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 0,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V2",
+          "label": "age 51 (51-80)",
+          "inputs": {
+            "age": 51,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 3,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V3",
+          "label": "age 80 (upper 51-80)",
+          "inputs": {
+            "age": 80,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 3,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V4",
+          "label": "age 81 (>80)",
+          "inputs": {
+            "age": 81,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 16,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V5",
+          "label": "age 50 (<=50 boundary)",
+          "inputs": {
+            "age": 50,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 0,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V6",
+          "label": "SpO2 96 boundary",
+          "inputs": {
+            "age": 40,
+            "spo2": 96,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 0,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V7",
+          "label": "SpO2 95 (91-95)",
+          "inputs": {
+            "age": 40,
+            "spo2": 95,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 8,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V8",
+          "label": "SpO2 91 (lower 91-95)",
+          "inputs": {
+            "age": 40,
+            "spo2": 91,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 8,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V9",
+          "label": "SpO2 90 (<=90)",
+          "inputs": {
+            "age": 40,
+            "spo2": 90,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 24,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V10",
+          "label": "respiratory infection yes",
+          "inputs": {
+            "age": 40,
+            "spo2": 98,
+            "respiratoryInfection": "yes",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 17,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V11",
+          "label": "Hb 100 anaemia boundary",
+          "inputs": {
+            "age": 40,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 100,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 11,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V12",
+          "label": "Hb 101 no anaemia",
+          "inputs": {
+            "age": 40,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 101,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 0,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V13",
+          "label": "upper abdominal incision",
+          "inputs": {
+            "age": 40,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "upper-abdominal",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 15,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V14",
+          "label": "intrathoracic incision",
+          "inputs": {
+            "age": 40,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "intrathoracic",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 24,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V15",
+          "label": "duration 2-3h",
+          "inputs": {
+            "age": 40,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "2to3h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 16,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V16",
+          "label": "duration >3h",
+          "inputs": {
+            "age": 40,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "gt3h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 23,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V17",
+          "label": "emergency yes",
+          "inputs": {
+            "age": 40,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "yes"
+          },
+          "outputs": {
+            "score": 8,
+            "riskClass": "Low"
+          }
+        },
+        {
+          "id": "V18",
+          "label": "maximum 123",
+          "inputs": {
+            "age": 85,
+            "spo2": 85,
+            "respiratoryInfection": "yes",
+            "hb": 90,
+            "incision": "intrathoracic",
+            "duration": "gt3h",
+            "emergency": "yes"
+          },
+          "outputs": {
+            "score": 123,
+            "riskClass": "High"
+          }
+        },
+        {
+          "id": "V19",
+          "label": "intermediate 26 boundary",
+          "inputs": {
+            "age": 55,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "gt3h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 26,
+            "riskClass": "Intermediate"
+          }
+        },
+        {
+          "id": "V20",
+          "label": "intermediate 44 boundary",
+          "inputs": {
+            "age": 85,
+            "spo2": 98,
+            "respiratoryInfection": "yes",
+            "hb": 100,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 44,
+            "riskClass": "Intermediate"
+          }
+        },
+        {
+          "id": "V21",
+          "label": "high 45 boundary",
+          "inputs": {
+            "age": 55,
+            "spo2": 92,
+            "respiratoryInfection": "no",
+            "hb": 100,
+            "incision": "peripheral",
+            "duration": "gt3h",
+            "emergency": "no"
+          },
+          "outputs": {
+            "score": 45,
+            "riskClass": "High"
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "age < 18 (adult model)",
+          "inputs": {
+            "age": 17,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "SpO2 > 100",
+          "inputs": {
+            "age": 40,
+            "spo2": 101,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          }
+        },
+        {
+          "id": "G3",
+          "reason": "Hb <= 0",
+          "inputs": {
+            "age": 40,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 0,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          }
+        },
+        {
+          "id": "G4",
+          "reason": "non-integer age",
+          "inputs": {
+            "age": 40.5,
+            "spo2": 98,
+            "respiratoryInfection": "no",
+            "hb": 140,
+            "incision": "peripheral",
+            "duration": "le2h",
+            "emergency": "no"
+          }
+        }
+      ],
+      "notes": "Correct PMID 21045639 (Canet J, Gallart L, Gomar C, et al. Anesthesiology 2010;113(6):1338-50). The requested JSON's PMID 21145643 is WRONG (a psychology paper). Seven predictors; duration 3 categories; range 0-123. Anaemia = Hb <= 100 g/L (10 g/dL). Risk class <26 Low / 26-44 Intermediate / >=45 High (Table 7). Derivation-cohort PPC rates are Spanish/Catalan, NOT Canadian-validated."
+    },
+    "apgar": {
+      "name": "Apgar score in newborns",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "all 2s = 10",
+          "inputs": {
+            "timepoint": "5min",
+            "appearance": 2,
+            "pulse": 2,
+            "grimace": 2,
+            "activity": 2,
+            "respiration": 2
+          },
+          "outputs": {
+            "score": 10
+          }
+        },
+        {
+          "id": "V2",
+          "label": "all 0s = 0",
+          "inputs": {
+            "timepoint": "1min",
+            "appearance": 0,
+            "pulse": 0,
+            "grimace": 0,
+            "activity": 0,
+            "respiration": 0
+          },
+          "outputs": {
+            "score": 0
+          }
+        },
+        {
+          "id": "V3",
+          "label": "all 1s = 5",
+          "inputs": {
+            "timepoint": "5min",
+            "appearance": 1,
+            "pulse": 1,
+            "grimace": 1,
+            "activity": 1,
+            "respiration": 1
+          },
+          "outputs": {
+            "score": 5
+          }
+        },
+        {
+          "id": "V4",
+          "label": "mixed = 8",
+          "inputs": {
+            "timepoint": "1min",
+            "appearance": 1,
+            "pulse": 2,
+            "grimace": 1,
+            "activity": 2,
+            "respiration": 2
+          },
+          "outputs": {
+            "score": 8
+          }
+        },
+        {
+          "id": "V5",
+          "label": "same score, 10-min label",
+          "inputs": {
+            "timepoint": "10min",
+            "appearance": 1,
+            "pulse": 1,
+            "grimace": 1,
+            "activity": 1,
+            "respiration": 1
+          },
+          "outputs": {
+            "score": 5
+          }
+        },
+        {
+          "id": "V6",
+          "label": "low: no HR/resp/tone",
+          "inputs": {
+            "timepoint": "1min",
+            "appearance": 1,
+            "pulse": 0,
+            "grimace": 1,
+            "activity": 0,
+            "respiration": 0
+          },
+          "outputs": {
+            "score": 2
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "component outside 0-2 (pulse=3)",
+          "inputs": {
+            "timepoint": "1min",
+            "appearance": 1,
+            "pulse": 3,
+            "grimace": 1,
+            "activity": 1,
+            "respiration": 1
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "component negative (respiration=-1)",
+          "inputs": {
+            "timepoint": "5min",
+            "appearance": 1,
+            "pulse": 1,
+            "grimace": 1,
+            "activity": 1,
+            "respiration": -1
+          }
+        }
+      ],
+      "notes": "Five components each 0-2; total 0-10. timepoint is a REQUIRED separately-labelled choice (1/5/10 min), carried to the result label but NOT scored. No resuscitation/treatment rule, no long-term prognosis from total."
+    },
+    "ciwa-ar": {
+      "name": "CIWA-Ar alcohol withdrawal (observer-administered score)",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "all zero = 0",
+          "inputs": {
+            "nausea": 0,
+            "tremor": 0,
+            "sweats": 0,
+            "anxiety": 0,
+            "agitation": 0,
+            "tactile": 0,
+            "auditory": 0,
+            "visual": 0,
+            "headache": 0,
+            "orientation": 0
+          },
+          "outputs": {
+            "score": 0
+          }
+        },
+        {
+          "id": "V2",
+          "label": "maximum = 67",
+          "inputs": {
+            "nausea": 7,
+            "tremor": 7,
+            "sweats": 7,
+            "anxiety": 7,
+            "agitation": 7,
+            "tactile": 7,
+            "auditory": 7,
+            "visual": 7,
+            "headache": 7,
+            "orientation": 4
+          },
+          "outputs": {
+            "score": 67
+          }
+        },
+        {
+          "id": "V3",
+          "label": "all ones = 10",
+          "inputs": {
+            "nausea": 1,
+            "tremor": 1,
+            "sweats": 1,
+            "anxiety": 1,
+            "agitation": 1,
+            "tactile": 1,
+            "auditory": 1,
+            "visual": 1,
+            "headache": 1,
+            "orientation": 1
+          },
+          "outputs": {
+            "score": 10
+          }
+        },
+        {
+          "id": "V4",
+          "label": "orientation 4 only",
+          "inputs": {
+            "nausea": 0,
+            "tremor": 0,
+            "sweats": 0,
+            "anxiety": 0,
+            "agitation": 0,
+            "tactile": 0,
+            "auditory": 0,
+            "visual": 0,
+            "headache": 0,
+            "orientation": 4
+          },
+          "outputs": {
+            "score": 4
+          }
+        },
+        {
+          "id": "V5",
+          "label": "realistic moderate",
+          "inputs": {
+            "nausea": 2,
+            "tremor": 3,
+            "sweats": 2,
+            "anxiety": 4,
+            "agitation": 3,
+            "tactile": 1,
+            "auditory": 2,
+            "visual": 2,
+            "headache": 3,
+            "orientation": 1
+          },
+          "outputs": {
+            "score": 23
+          }
+        },
+        {
+          "id": "V6",
+          "label": "all 7s except orientation 0",
+          "inputs": {
+            "nausea": 7,
+            "tremor": 7,
+            "sweats": 7,
+            "anxiety": 7,
+            "agitation": 7,
+            "tactile": 7,
+            "auditory": 7,
+            "visual": 7,
+            "headache": 7,
+            "orientation": 0
+          },
+          "outputs": {
+            "score": 63
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "item outside 0-7 (nausea=8)",
+          "inputs": {
+            "nausea": 8,
+            "tremor": 0,
+            "sweats": 0,
+            "anxiety": 0,
+            "agitation": 0,
+            "tactile": 0,
+            "auditory": 0,
+            "visual": 0,
+            "headache": 0,
+            "orientation": 0
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "orientation outside 0-4 (=5)",
+          "inputs": {
+            "nausea": 0,
+            "tremor": 0,
+            "sweats": 0,
+            "anxiety": 0,
+            "agitation": 0,
+            "tactile": 0,
+            "auditory": 0,
+            "visual": 0,
+            "headache": 0,
+            "orientation": 5
+          }
+        }
+      ],
+      "notes": "10 items: 9 items 0-7 + orientation/clouding 0-4. Total 0-67. Observer-administered; score only, NO benzodiazepine dosing protocol. Instrument states 'not copyrighted and may be reproduced freely' (Sullivan 1989)."
+    },
+    "westley-croup": {
+      "name": "Westley croup severity score (children)",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "all zero = 0",
+          "inputs": {
+            "consciousness": 0,
+            "cyanosis": 0,
+            "stridor": 0,
+            "airEntry": 0,
+            "retractions": 0
+          },
+          "outputs": {
+            "score": 0
+          }
+        },
+        {
+          "id": "V2",
+          "label": "maximum = 17",
+          "inputs": {
+            "consciousness": 5,
+            "cyanosis": 5,
+            "stridor": 2,
+            "airEntry": 2,
+            "retractions": 3
+          },
+          "outputs": {
+            "score": 17
+          }
+        },
+        {
+          "id": "V3",
+          "label": "mild (stridor on agitation)",
+          "inputs": {
+            "consciousness": 0,
+            "cyanosis": 0,
+            "stridor": 1,
+            "airEntry": 0,
+            "retractions": 0
+          },
+          "outputs": {
+            "score": 1
+          }
+        },
+        {
+          "id": "V4",
+          "label": "moderate (stridor at rest + retractions)",
+          "inputs": {
+            "consciousness": 0,
+            "cyanosis": 0,
+            "stridor": 2,
+            "airEntry": 1,
+            "retractions": 2
+          },
+          "outputs": {
+            "score": 5
+          }
+        },
+        {
+          "id": "V5",
+          "label": "cyanosis with agitation (4)",
+          "inputs": {
+            "consciousness": 0,
+            "cyanosis": 4,
+            "stridor": 1,
+            "airEntry": 1,
+            "retractions": 1
+          },
+          "outputs": {
+            "score": 7
+          }
+        },
+        {
+          "id": "V6",
+          "label": "cyanosis at rest (5)",
+          "inputs": {
+            "consciousness": 0,
+            "cyanosis": 5,
+            "stridor": 2,
+            "airEntry": 2,
+            "retractions": 2
+          },
+          "outputs": {
+            "score": 11
+          }
+        },
+        {
+          "id": "V7",
+          "label": "disoriented (5)",
+          "inputs": {
+            "consciousness": 5,
+            "cyanosis": 0,
+            "stridor": 2,
+            "airEntry": 2,
+            "retractions": 3
+          },
+          "outputs": {
+            "score": 12
+          }
+        },
+        {
+          "id": "V8",
+          "label": "severe combination",
+          "inputs": {
+            "consciousness": 0,
+            "cyanosis": 4,
+            "stridor": 2,
+            "airEntry": 2,
+            "retractions": 3
+          },
+          "outputs": {
+            "score": 11
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "retractions outside 0-3 (=4)",
+          "inputs": {
+            "consciousness": 0,
+            "cyanosis": 0,
+            "stridor": 1,
+            "airEntry": 1,
+            "retractions": 4
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "cyanosis invalid level (=2; only 0/4/5)",
+          "inputs": {
+            "consciousness": 0,
+            "cyanosis": 2,
+            "stridor": 1,
+            "airEntry": 1,
+            "retractions": 1
+          }
+        },
+        {
+          "id": "G3",
+          "reason": "consciousness invalid (=3; only 0/5)",
+          "inputs": {
+            "consciousness": 3,
+            "cyanosis": 0,
+            "stridor": 1,
+            "airEntry": 1,
+            "retractions": 1
+          }
+        }
+      ],
+      "notes": "Five signs: consciousness 0/5, cyanosis 0/4/5, stridor 0/1/2, air entry 0/1/2, retractions 0/1/2/3; total 0-17. Original uses CYANOSIS (not SpO2<92%, a modern adaptation). Age is eligibility context (request <=6 y; original derivation 4 mo-5 y), NOT a scored coefficient. Severity banding is heterogeneous across sources; score is NOT a treatment directive."
+    },
+    "aec": {
+      "name": "Absolute eosinophil count",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "WBC 8.0, eos 5%",
+          "inputs": {
+            "wbc": 8.0,
+            "eosinophils": 5.0
+          },
+          "outputs": {
+            "aec109L": 0.4,
+            "aecPerMicrolitre": 400.0
+          }
+        },
+        {
+          "id": "V2",
+          "label": "WBC 12.3, eos 8.5%",
+          "inputs": {
+            "wbc": 12.3,
+            "eosinophils": 8.5
+          },
+          "outputs": {
+            "aec109L": 1.0455,
+            "aecPerMicrolitre": 1045.5
+          }
+        },
+        {
+          "id": "V3",
+          "label": "WBC 7.5, eos 20% (1.5 boundary)",
+          "inputs": {
+            "wbc": 7.5,
+            "eosinophils": 20.0
+          },
+          "outputs": {
+            "aec109L": 1.5,
+            "aecPerMicrolitre": 1500.0
+          }
+        },
+        {
+          "id": "V4",
+          "label": "eos 0%",
+          "inputs": {
+            "wbc": 10.0,
+            "eosinophils": 0.0
+          },
+          "outputs": {
+            "aec109L": 0.0,
+            "aecPerMicrolitre": 0.0
+          }
+        },
+        {
+          "id": "V5",
+          "label": "WBC 4.2, eos 1%",
+          "inputs": {
+            "wbc": 4.2,
+            "eosinophils": 1.0
+          },
+          "outputs": {
+            "aec109L": 0.042,
+            "aecPerMicrolitre": 42.0
+          }
+        },
+        {
+          "id": "V6",
+          "label": "WBC 9.99, eos 3.3%",
+          "inputs": {
+            "wbc": 9.99,
+            "eosinophils": 3.3
+          },
+          "outputs": {
+            "aec109L": 0.32966999999999996,
+            "aecPerMicrolitre": 329.66999999999996
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "WBC <= 0",
+          "inputs": {
+            "wbc": 0.0,
+            "eosinophils": 5.0
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "eosinophil % > 100",
+          "inputs": {
+            "wbc": 8.0,
+            "eosinophils": 101.0
+          }
+        },
+        {
+          "id": "G3",
+          "reason": "eosinophil % < 0",
+          "inputs": {
+            "wbc": 8.0,
+            "eosinophils": -1.0
+          }
+        }
+      ],
+      "notes": "AEC = WBC (x10^9/L) x eosinophil% / 100. Output x10^9/L and /microlitre (x1000). Percentage input, NOT fraction. No diagnostic threshold applied (eosinophilia/hypereosinophilia definitions are context only, not classified)."
+    },
+    "ga-from-edd": {
+      "name": "Gestational age from supplied EDD",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "EDD 2026-11-01, as-of 2026-10-01",
+          "inputs": {
+            "edd": "2026-11-01",
+            "asOf": "2026-10-01"
+          },
+          "outputs": {
+            "weeks": 35,
+            "days": 4,
+            "gestationalDays": 249,
+            "daysToEdd": 31,
+            "postTerm": false
+          }
+        },
+        {
+          "id": "V2",
+          "label": "as-of = EDD (40+0)",
+          "inputs": {
+            "edd": "2026-11-01",
+            "asOf": "2026-11-01"
+          },
+          "outputs": {
+            "weeks": 40,
+            "days": 0,
+            "gestationalDays": 280,
+            "daysToEdd": 0,
+            "postTerm": false
+          }
+        },
+        {
+          "id": "V3",
+          "label": "EDD 2027-01-01, as-of 2026-06-01",
+          "inputs": {
+            "edd": "2027-01-01",
+            "asOf": "2026-06-01"
+          },
+          "outputs": {
+            "weeks": 9,
+            "days": 3,
+            "gestationalDays": 66,
+            "daysToEdd": 214,
+            "postTerm": false
+          }
+        },
+        {
+          "id": "V4",
+          "label": "leap-year EDD 2024-03-01, as-of 2023-12-01",
+          "inputs": {
+            "edd": "2024-03-01",
+            "asOf": "2023-12-01"
+          },
+          "outputs": {
+            "weeks": 27,
+            "days": 0,
+            "gestationalDays": 189,
+            "daysToEdd": 91,
+            "postTerm": false
+          }
+        },
+        {
+          "id": "V5",
+          "label": "post-term 42+6 (flag)",
+          "inputs": {
+            "edd": "2026-10-01",
+            "asOf": "2026-10-21"
+          },
+          "outputs": {
+            "weeks": 42,
+            "days": 6,
+            "gestationalDays": 300,
+            "daysToEdd": -20,
+            "postTerm": true
+          }
+        },
+        {
+          "id": "V6",
+          "label": "month boundary EDD 2026-12-01, as-of 2026-09-01",
+          "inputs": {
+            "edd": "2026-12-01",
+            "asOf": "2026-09-01"
+          },
+          "outputs": {
+            "weeks": 27,
+            "days": 0,
+            "gestationalDays": 189,
+            "daysToEdd": 91,
+            "postTerm": false
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "as-of >280 days before EDD (GA<0)",
+          "inputs": {
+            "edd": "2026-10-20",
+            "asOf": "2026-01-03"
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "as-of >322 days after EDD (implausible)",
+          "inputs": {
+            "edd": "2026-01-01",
+            "asOf": "2026-11-27"
+          }
+        },
+        {
+          "id": "G3",
+          "reason": "invalid calendar date",
+          "inputs": {
+            "edd": "2026-02-30",
+            "asOf": "2026-10-01"
+          }
+        }
+      ],
+      "notes": "GA = 280 - (EDD - asOf) in days; weeks = floor/7, days = mod 7. Date-only civil-date arithmetic (timezone-safe). EDD and asOf both REQUIRED, no hidden current-date default. No LMP/ultrasound/ART inference. Reject GA<0 or >322 days; flag postTerm when >294 days (past 42+0)."
+    },
+    "maintenance-fluids": {
+      "name": "Paediatric maintenance fluid (Holliday-Segar DAILY)",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "5 kg",
+          "inputs": {
+            "weightKg": 5.0
+          },
+          "outputs": {
+            "dailyVolumeMl": 500.0
+          }
+        },
+        {
+          "id": "V2",
+          "label": "10 kg (boundary)",
+          "inputs": {
+            "weightKg": 10.0
+          },
+          "outputs": {
+            "dailyVolumeMl": 1000.0
+          }
+        },
+        {
+          "id": "V3",
+          "label": "15 kg",
+          "inputs": {
+            "weightKg": 15.0
+          },
+          "outputs": {
+            "dailyVolumeMl": 1250.0
+          }
+        },
+        {
+          "id": "V4",
+          "label": "20 kg (boundary)",
+          "inputs": {
+            "weightKg": 20.0
+          },
+          "outputs": {
+            "dailyVolumeMl": 1500.0
+          }
+        },
+        {
+          "id": "V5",
+          "label": "25 kg",
+          "inputs": {
+            "weightKg": 25.0
+          },
+          "outputs": {
+            "dailyVolumeMl": 1600.0
+          }
+        },
+        {
+          "id": "V6",
+          "label": "30 kg",
+          "inputs": {
+            "weightKg": 30.0
+          },
+          "outputs": {
+            "dailyVolumeMl": 1700.0
+          }
+        },
+        {
+          "id": "V7",
+          "label": "10.5 kg fractional",
+          "inputs": {
+            "weightKg": 10.5
+          },
+          "outputs": {
+            "dailyVolumeMl": 1025.0
+          }
+        },
+        {
+          "id": "V8",
+          "label": "20.5 kg fractional",
+          "inputs": {
+            "weightKg": 20.5
+          },
+          "outputs": {
+            "dailyVolumeMl": 1510.0
+          }
+        },
+        {
+          "id": "V9",
+          "label": "70 kg",
+          "inputs": {
+            "weightKg": 70.0
+          },
+          "outputs": {
+            "dailyVolumeMl": 2500.0
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "weight <= 0",
+          "inputs": {
+            "weightKg": 0.0
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "weight negative",
+          "inputs": {
+            "weightKg": -1.0
+          }
+        }
+      ],
+      "notes": "DAILY Holliday-Segar: <=10 kg 100 mL/kg/day; 10-20 kg 1000+50x(kg-10); >20 kg 1500+20x(kg-20). NOT the 4-2-1 hourly shortcut x24 (96/48/24). No composition/resuscitation/prescribing; no source cap (NICE NG29 obesity caveat noted, no numeric cap invented)."
+    },
+    "posttest-lr": {
+      "name": "Post-test probability from likelihood ratio(s)",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "50%, LR 2",
+          "inputs": {
+            "pretestProbabilityPct": 50.0,
+            "likelihoodRatios": [
+              2.0
+            ]
+          },
+          "outputs": {
+            "posttestProbabilityPct": 66.66666666666666
+          }
+        },
+        {
+          "id": "V2",
+          "label": "50%, LR 0.5",
+          "inputs": {
+            "pretestProbabilityPct": 50.0,
+            "likelihoodRatios": [
+              0.5
+            ]
+          },
+          "outputs": {
+            "posttestProbabilityPct": 33.33333333333333
+          }
+        },
+        {
+          "id": "V3",
+          "label": "20%, LR 5 then 2",
+          "inputs": {
+            "pretestProbabilityPct": 20.0,
+            "likelihoodRatios": [
+              5.0,
+              2.0
+            ]
+          },
+          "outputs": {
+            "posttestProbabilityPct": 71.42857142857143
+          }
+        },
+        {
+          "id": "V4",
+          "label": "20%, LR 1 neutral",
+          "inputs": {
+            "pretestProbabilityPct": 20.0,
+            "likelihoodRatios": [
+              1.0
+            ]
+          },
+          "outputs": {
+            "posttestProbabilityPct": 20.0
+          }
+        },
+        {
+          "id": "V5",
+          "label": "1%, LR 100",
+          "inputs": {
+            "pretestProbabilityPct": 1.0,
+            "likelihoodRatios": [
+              100.0
+            ]
+          },
+          "outputs": {
+            "posttestProbabilityPct": 50.25125628140703
+          }
+        },
+        {
+          "id": "V6",
+          "label": "99%, LR 0.01",
+          "inputs": {
+            "pretestProbabilityPct": 99.0,
+            "likelihoodRatios": [
+              0.01
+            ]
+          },
+          "outputs": {
+            "posttestProbabilityPct": 49.74874371859294
+          }
+        },
+        {
+          "id": "V7",
+          "label": "10%, LRs [3,0.5,4]",
+          "inputs": {
+            "pretestProbabilityPct": 10.0,
+            "likelihoodRatios": [
+              3.0,
+              0.5,
+              4.0
+            ]
+          },
+          "outputs": {
+            "posttestProbabilityPct": 40.0
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "pre-test probability = 0 (impossible)",
+          "inputs": {
+            "pretestProbabilityPct": 0.0,
+            "likelihoodRatios": [
+              2.0
+            ]
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "pre-test probability = 100 (certain)",
+          "inputs": {
+            "pretestProbabilityPct": 100.0,
+            "likelihoodRatios": [
+              2.0
+            ]
+          }
+        },
+        {
+          "id": "G3",
+          "reason": "LR = 0",
+          "inputs": {
+            "pretestProbabilityPct": 50.0,
+            "likelihoodRatios": [
+              0.0
+            ]
+          }
+        },
+        {
+          "id": "G4",
+          "reason": "LR < 0",
+          "inputs": {
+            "pretestProbabilityPct": 50.0,
+            "likelihoodRatios": [
+              -2.0
+            ]
+          }
+        },
+        {
+          "id": "G5",
+          "reason": "empty LR sequence",
+          "inputs": {
+            "pretestProbabilityPct": 50.0,
+            "likelihoodRatios": []
+          }
+        }
+      ],
+      "notes": "odds=p/(1-p); post_odds=odds x prod(LRs); post=post_odds/(1+post_odds). Pre-test probability strictly (0,100) exclusive; each LR finite and >0. LR is a likelihood ratio, NOT a risk/odds ratio. Multiple LRs assume conditional independence (disclosed). Probability estimate, not a diagnosis."
+    },
+    "posttest-sens-spec": {
+      "name": "Post-test probability from pre-test probability, sensitivity and specificity",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "positive: 20%, sens 90, spec 95",
+          "inputs": {
+            "pretestProbabilityPct": 20.0,
+            "sensitivityPct": 90.0,
+            "specificityPct": 95.0,
+            "result": "positive"
+          },
+          "outputs": {
+            "posttestProbabilityPct": 81.8181818181818
+          }
+        },
+        {
+          "id": "V2",
+          "label": "negative: 20%, sens 90, spec 95",
+          "inputs": {
+            "pretestProbabilityPct": 20.0,
+            "sensitivityPct": 90.0,
+            "specificityPct": 95.0,
+            "result": "negative"
+          },
+          "outputs": {
+            "posttestProbabilityPct": 2.5641025641025634
+          }
+        },
+        {
+          "id": "V3",
+          "label": "positive: 50%, sens 80, spec 60",
+          "inputs": {
+            "pretestProbabilityPct": 50.0,
+            "sensitivityPct": 80.0,
+            "specificityPct": 60.0,
+            "result": "positive"
+          },
+          "outputs": {
+            "posttestProbabilityPct": 66.66666666666666
+          }
+        },
+        {
+          "id": "V4",
+          "label": "negative: 50%, sens 80, spec 60",
+          "inputs": {
+            "pretestProbabilityPct": 50.0,
+            "sensitivityPct": 80.0,
+            "specificityPct": 60.0,
+            "result": "negative"
+          },
+          "outputs": {
+            "posttestProbabilityPct": 24.999999999999993
+          }
+        },
+        {
+          "id": "V5",
+          "label": "positive: 10%, sens 99, spec 99",
+          "inputs": {
+            "pretestProbabilityPct": 10.0,
+            "sensitivityPct": 99.0,
+            "specificityPct": 99.0,
+            "result": "positive"
+          },
+          "outputs": {
+            "posttestProbabilityPct": 91.66666666666666
+          }
+        },
+        {
+          "id": "V6",
+          "label": "negative: 10%, sens 99, spec 99",
+          "inputs": {
+            "pretestProbabilityPct": 10.0,
+            "sensitivityPct": 99.0,
+            "specificityPct": 99.0,
+            "result": "negative"
+          },
+          "outputs": {
+            "posttestProbabilityPct": 0.11210762331838575
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "sensitivity = 0",
+          "inputs": {
+            "pretestProbabilityPct": 20.0,
+            "sensitivityPct": 0.0,
+            "specificityPct": 95.0,
+            "result": "positive"
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "sensitivity = 100 (LR- undefined)",
+          "inputs": {
+            "pretestProbabilityPct": 20.0,
+            "sensitivityPct": 100.0,
+            "specificityPct": 95.0,
+            "result": "negative"
+          }
+        },
+        {
+          "id": "G3",
+          "reason": "specificity = 0",
+          "inputs": {
+            "pretestProbabilityPct": 20.0,
+            "sensitivityPct": 90.0,
+            "specificityPct": 0.0,
+            "result": "negative"
+          }
+        },
+        {
+          "id": "G4",
+          "reason": "specificity = 100 (LR+ undefined)",
+          "inputs": {
+            "pretestProbabilityPct": 20.0,
+            "sensitivityPct": 90.0,
+            "specificityPct": 100.0,
+            "result": "positive"
+          }
+        },
+        {
+          "id": "G5",
+          "reason": "pre-test probability = 0",
+          "inputs": {
+            "pretestProbabilityPct": 0.0,
+            "sensitivityPct": 90.0,
+            "specificityPct": 95.0,
+            "result": "positive"
+          }
+        },
+        {
+          "id": "G6",
+          "reason": "pre-test probability = 100",
+          "inputs": {
+            "pretestProbabilityPct": 100.0,
+            "sensitivityPct": 90.0,
+            "specificityPct": 95.0,
+            "result": "positive"
+          }
+        }
+      ],
+      "notes": "positive LR+=sens/(1-spec); negative LR-=(1-sens)/spec. sensitivity and specificity strictly (0,100) exclusive (avoids division-by-zero / infinity->100% shortcuts). Result direction is a deliberate positive/negative choice, no default. No blanket infinity->100% or ->0% shortcut."
+    },
+    "urine-acr": {
+      "name": "Spot urine albumin-to-creatinine ratio (adults)",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "SI: alb 30 mg/L, creat 10 mmol/L",
+          "inputs": {
+            "albuminValue": 30.0,
+            "albuminUnit": "mg/L",
+            "creatinineValue": 10.0,
+            "creatinineUnit": "mmol/L"
+          },
+          "outputs": {
+            "acrMgMmol": 3.0,
+            "acrMgG": 26.52050919377652
+          }
+        },
+        {
+          "id": "V2",
+          "label": "conv: alb 30 mg/dL, creat 100 mg/dL",
+          "inputs": {
+            "albuminValue": 30.0,
+            "albuminUnit": "mg/dL",
+            "creatinineValue": 100.0,
+            "creatinineUnit": "mg/dL"
+          },
+          "outputs": {
+            "acrMgMmol": 33.936,
+            "acrMgG": 300.0
+          }
+        },
+        {
+          "id": "V3",
+          "label": "SI: alb 15 mg/L, creat 8.5 mmol/L",
+          "inputs": {
+            "albuminValue": 15.0,
+            "albuminUnit": "mg/L",
+            "creatinineValue": 8.5,
+            "creatinineUnit": "mmol/L"
+          },
+          "outputs": {
+            "acrMgMmol": 1.7647058823529411,
+            "acrMgG": 15.600299525750893
+          }
+        },
+        {
+          "id": "V4",
+          "label": "SI: alb 300 mg/L, creat 10 mmol/L (A3 boundary)",
+          "inputs": {
+            "albuminValue": 300.0,
+            "albuminUnit": "mg/L",
+            "creatinineValue": 10.0,
+            "creatinineUnit": "mmol/L"
+          },
+          "outputs": {
+            "acrMgMmol": 30.0,
+            "acrMgG": 265.2050919377652
+          }
+        },
+        {
+          "id": "V6",
+          "label": "SI: alb 3 mg/L, creat 15 mmol/L (low)",
+          "inputs": {
+            "albuminValue": 3.0,
+            "albuminUnit": "mg/L",
+            "creatinineValue": 15.0,
+            "creatinineUnit": "mmol/L"
+          },
+          "outputs": {
+            "acrMgMmol": 0.2,
+            "acrMgG": 1.768033946251768
+          }
+        },
+        {
+          "id": "V5",
+          "label": "V1 same sample entered conventional (alb 3 mg/dL, creat 113.12 mg/dL)",
+          "inputs": {
+            "albuminValue": 3.0,
+            "albuminUnit": "mg/dL",
+            "creatinineValue": 113.12,
+            "creatinineUnit": "mg/dL"
+          },
+          "outputs": {
+            "acrMgMmol": 3.0,
+            "acrMgG": 26.52050919377652
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "albumin <= 0",
+          "inputs": {
+            "albuminValue": 0.0,
+            "albuminUnit": "mg/L",
+            "creatinineValue": 10.0,
+            "creatinineUnit": "mmol/L"
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "creatinine <= 0",
+          "inputs": {
+            "albuminValue": 30.0,
+            "albuminUnit": "mg/L",
+            "creatinineValue": 0.0,
+            "creatinineUnit": "mmol/L"
+          }
+        }
+      ],
+      "notes": "ACR = albumin/creatinine, same sample. albumin mg/L or mg/dL; creatinine mmol/L or mg/dL. mg/mmol = alb(mg/L)/creat(mmol/L); mg/g = alb(mg/L)/creat(mg/L) x1000. Creatinine MW 113.12 (1 mmol/L = 113.12 mg/L). Exact bridge mg/g = mg/mmol x (1000/113.12); KDIGO '0.113' and '3 mg/mmol ~ 30 mg/g' are ROUNDED staging. Numeric ratio only; no diagnostic threshold/classification from a single result."
+    },
+    "urine-pcr": {
+      "name": "Spot urine protein-to-creatinine ratio (adults)",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "SI: protein 300 mg/L, creat 10 mmol/L",
+          "inputs": {
+            "proteinValue": 300.0,
+            "proteinUnit": "mg/L",
+            "creatinineValue": 10.0,
+            "creatinineUnit": "mmol/L"
+          },
+          "outputs": {
+            "pcrMgMmol": 30.0,
+            "pcrMgG": 265.2050919377652
+          }
+        },
+        {
+          "id": "V2",
+          "label": "conv: protein 150 mg/dL, creat 100 mg/dL",
+          "inputs": {
+            "proteinValue": 150.0,
+            "proteinUnit": "mg/dL",
+            "creatinineValue": 100.0,
+            "creatinineUnit": "mg/dL"
+          },
+          "outputs": {
+            "pcrMgMmol": 169.68,
+            "pcrMgG": 1500.0
+          }
+        },
+        {
+          "id": "V3",
+          "label": "SI: protein 500 mg/L, creat 7 mmol/L",
+          "inputs": {
+            "proteinValue": 500.0,
+            "proteinUnit": "mg/L",
+            "creatinineValue": 7.0,
+            "creatinineUnit": "mmol/L"
+          },
+          "outputs": {
+            "pcrMgMmol": 71.42857142857143,
+            "pcrMgG": 631.4406950899172
+          }
+        },
+        {
+          "id": "V4",
+          "label": "nephrotic: protein 3000 mg/L, creat 10 mmol/L",
+          "inputs": {
+            "proteinValue": 3000.0,
+            "proteinUnit": "mg/L",
+            "creatinineValue": 10.0,
+            "creatinineUnit": "mmol/L"
+          },
+          "outputs": {
+            "pcrMgMmol": 300.0,
+            "pcrMgG": 2652.050919377652
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "protein <= 0",
+          "inputs": {
+            "proteinValue": 0.0,
+            "proteinUnit": "mg/L",
+            "creatinineValue": 10.0,
+            "creatinineUnit": "mmol/L"
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "creatinine <= 0",
+          "inputs": {
+            "proteinValue": 300.0,
+            "proteinUnit": "mg/L",
+            "creatinineValue": 0.0,
+            "creatinineUnit": "mmol/L"
+          }
+        }
+      ],
+      "notes": "PCR = total protein/creatinine, same sample. DISTINCT analyte from ACR (total protein, not albumin). Same unit handling/creatinine conversion as ACR. Never present a fixed PCR<->ACR conversion as exact. Numeric ratio only; no diagnosis from a single result."
+    }
+  }
+}

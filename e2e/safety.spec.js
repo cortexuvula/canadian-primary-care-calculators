@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {registry} from '../src/registry.js';
-async function select(page,id){await page.getByTestId('select-'+id).click();}
+import {choose} from './ui-helpers.js';
+async function select(page,id){await choose(page,id);}
 async function fill(page,d){for(const f of d.inputs){const input=page.locator('#cpc-'+f.id);const value=d.vectors[0].inputs[f.id];if(f.type==='choice')await input.selectOption(value);else await input.fill(value);}}
 async function calculate(page,d){await select(page,d.id);await fill(page,d);await page.getByRole('button',{name:'Calculate',exact:true}).click();await expect(page.getByRole('region',{name:'Result',exact:true})).toBeVisible();}
 for(const d of registry) test(`compiled ${d.id}: golden vector and every field invalidates copy/result`,async({page})=>{

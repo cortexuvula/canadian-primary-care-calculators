@@ -15,15 +15,15 @@ test('release ZIP is deterministic, commit-bound and excludes unapproved files',
  const bytes='// synthetic release-fixture runtime\n';
  const hash=createHash('sha256').update(bytes).digest('hex');
  for(const f of ['plugin.js','desktop/plugin.js'])writeFileSync(repo+'/'+f,bytes);
- writeFileSync(repo+'/runtime.sha256',hash+'\n');writeFileSync(repo+'/package.json','{"version":"0.3.0"}');
- writeFileSync(repo+'/plugin.yaml','name: canadian-primary-care\nversion: "0.3.0"\n');
+ writeFileSync(repo+'/runtime.sha256',hash+'\n');writeFileSync(repo+'/package.json','{"version":"0.4.0"}');
+ writeFileSync(repo+'/plugin.yaml','name: canadian-primary-care\nversion: "0.4.0"\n');
  const files=['desktop/plugin.js','package.json','plugin.js','plugin.yaml','public-files.json','runtime.sha256'];
  writeFileSync(repo+'/public-files.json',JSON.stringify(files));
  git('init','-b','main');git('add','.');git('-c','user.name=Release Test','-c','user.email=test@example.invalid','commit','-m','Synthetic fixture');
  const sha=git('rev-parse','HEAD');
  writeFileSync(repo+'/private-untracked.txt','must not be archived');
  let r=run(['python3',script,out]);assert.equal(r.status,0,r.stderr+r.stdout);
- const zip=out+'/canadian-primary-care-0.3.0.zip',first=readFileSync(zip);
+ const zip=out+'/canadian-primary-care-0.4.0.zip',first=readFileSync(zip);
  r=run(['python3',script,out]);assert.equal(r.status,0,r.stderr);assert.deepEqual(readFileSync(zip),first);
  const manifest=JSON.parse(readFileSync(out+'/ASSET-MANIFEST.json'));assert.equal(manifest.source_sha,sha);assert.equal(manifest.runtime_sha256,hash);
  const inspect=run(['python3','-c',`import zipfile,json; z=zipfile.ZipFile(${JSON.stringify(zip)}); print(json.dumps(z.namelist()))`]);

@@ -1,6 +1,6 @@
 # Canadian Primary Care — Precision Console
 
-**Version 0.3.0 · preview / prerelease.** Fifteen named calculators in six categories, using Canadian units, for Hermes Desktop. This is a fixed clinician-decision-support library, not a universal calculator or treatment recommendation.
+**Version 0.4.0 · preview / prerelease.** Twenty-six named calculators in fifteen categories, using Canadian units, for Hermes Desktop. This is a fixed clinician-decision-support library, not a universal calculator or treatment recommendation.
 
 ## Disclaimer
 
@@ -17,11 +17,16 @@
 
 Read the [clinical guide](docs/clinical-guide.md) for every model's units, eligibility, limitations and source-population qualifications. **HOMA1 is not HOMA2.** Insulin is entered in pmol/L and divided by 6.0 internally. Estimates require fasting endogenous insulin; no universal HOMA/QUICKI cutoff is applied. CHA₂DS₂-VASc is not the Canadian CHADS-65 anticoagulation algorithm. A high HAS-BLED score is not an automatic reason to withhold anticoagulation.
 
+### Batch A additions (0.4.0 preview)
+
+ARISCAT; Apgar; CIWA-Ar; Westley croup; absolute eosinophil count; gestational age from supplied EDD; daily Holliday–Segar maintenance fluids; post-test probability from likelihood ratios; post-test probability from sensitivity/specificity; adult urine ACR; adult urine PCR. Exact request mapping and model limits: [Batch A clinical guide](docs/batch-a-clinical-guide.md). All other requested expansion families remain deferred.
+
 ## Install (Hermes Desktop required)
 
-Requires **Hermes >=0.21.6 with Desktop**; CLI-only Hermes cannot display this plugin. The [compatibility notes](docs/compatibility.md) identify the public API contracts used. Version 0.3.0 is a preview: source/browser tests do not certify live Desktop loading, complete host theming or the real OS clipboard.
+Requires **Hermes >=0.21.6 with Desktop**; CLI-only Hermes cannot display this plugin. The [compatibility notes](docs/compatibility.md) identify the public API contracts used. Version 0.4.0 is a preview: source/browser tests do not certify live Desktop loading, complete host theming or the real OS clipboard.
 
-Once this repository has been published:
+The installer below follows the public repository; it does not select this unreviewed candidate. Use only an independently approved exact source/artifact. Publication and installation of 0.4.0 are separate owner actions after review:
+
 
 ```sh
 hermes plugins install cortexuvula/canadian-primary-care-calculators --no-enable
@@ -33,7 +38,7 @@ Enable **Canadian Primary Care** in Desktop's Plugins settings (the runtime is o
 
 ## Use and privacy
 
-- Search calculator names or aliases, filter by category, mark favourites, or switch to A–Z browsing. The real catalog contains 15 entries; 50/150/300-entry test catalogs are fictional and test-only.
+- Search calculator names or aliases, filter by category, mark favourites, or switch to A–Z browsing. The real catalog contains 26 entries (24 initially shown; Show more reveals the remainder); 50/150/300-entry test catalogs are fictional and test-only.
 - Enter measurements in the displayed Canadian units, choose required applicability answers, then **Calculate**. Missing/unsupported values fail closed with field guidance. Editing a value immediately invalidates an old result and disables Copy until recalculated.
 - Changing calculator clears clinical drafts/results. **Reset** clears the active form/result. Collapsing discovery in a narrow pane does not change the active draft.
 - Calculations are offline/local. No patient identifiers are requested. The plugin does not persist or transmit clinical inputs/results and has no telemetry, network API, Python backend, shell commands, credential reads, background process or updater. Only favourite calculator IDs are persisted through plugin-scoped SDK storage.
@@ -47,6 +52,10 @@ These depict the compiled runtime in a browser harness, **not a live Desktop ins
 ![Synthetic empty library, light appearance](docs/screenshots/library-light.png)
 ![Synthetic BSA result, dark appearance](docs/screenshots/bsa-dark.png)
 ![Synthetic narrow library](docs/screenshots/library-narrow.png)
+
+![Synthetic gestational-age civil-date controls, dark appearance](docs/screenshots/ga-dark.png)
+![Synthetic chained-likelihood-ratio calculation, light appearance](docs/screenshots/lr-light.png)
+[View synthetic 320-pixel ACR example](docs/screenshots/acr-narrow.png)
 
 ## Develop and verify
 
