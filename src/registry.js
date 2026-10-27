@@ -1,5 +1,6 @@
 import {framingham, homa, egfr} from './engine.js';
 import {expansion} from './expansion-registry.js';
+import {batchA} from './batch-a-registry.js';
 const source = (title,url) => ({title,url,accessed:'2026-10-26'});
 const pubmed = (title,pmid) => source(title,`https://pubmed.ncbi.nlm.nih.gov/${pmid}/`);
 const number = (id,label,unit,help) => ({id,label,unit,help,type:'number'});
@@ -50,7 +51,8 @@ export const registry = [
   interpretation:()=> 'Estimate, not a precise measurement. Creatinine–cystatin C is more accurate; indexed eGFR is not absolute drug-dosing clearance.',
   vectors:[{inputs:egfrInputs,expected:{gfr:'75'},provenance:'Doc §4 independent F55/Scr80'},{inputs:{...egfrInputs,sex:'male',age:'60',creatinine:'110'},expected:{gfr:'66'},provenance:'Doc §4 independent M60/Scr110'},{inputs:{...egfrInputs,age:'70',creatinine:'120'},expected:{gfr:'42'},provenance:'Doc §4 independent F70/Scr120'}]
  },
- ...expansion
+ ...expansion,
+ ...batchA
 ];
 export function favourites(value) {
   if (!Array.isArray(value) || !value.every(x=>typeof x==='string')) return [];

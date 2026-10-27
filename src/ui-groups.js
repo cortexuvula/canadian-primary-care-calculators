@@ -1,6 +1,8 @@
 // Presentation only. Ordered, exhaustive groups from the UI Consultant audit.
 // Clinical definitions remain the authority for every field and its content.
+import {batchGroups} from './batch-a-groups.js';
 export const inputGroups = {
+  ...batchGroups,
   framingham: [['Model and age',['sex','age']],['Measurements',['tc','hdl','sbp']],['Risk factors',['treated','smoker','diabetes']],['Eligibility checks',['cvd','genetic','bypass']],['Canadian reporting input',['family']]],
   'homa1-ir': [['Measurements',['glucose','insulin']],['Eligibility',['fasting','exogenous','population']]],
   'egfr-2021': [['Model and measurements',['sex','age','creatinine']],['Applicability',['stable','habit']]],

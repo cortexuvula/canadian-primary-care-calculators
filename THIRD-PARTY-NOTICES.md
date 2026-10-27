@@ -1,6 +1,6 @@
 # Sources and third-party notices
 
-The MIT licence applies to Andre Hugo's original implementation and documentation, not to linked articles, third-party works, model names or trademarks. These are independent implementations of published equations, coefficients and scoring point values, with original surrounding wording. No source article, spreadsheet, copyrighted questionnaire/instrument text, logo, font or other third-party asset is redistributed. Citations are scientific attribution, not a permission grant or an endorsement. No legal or regulatory certification is claimed.
+The MIT licence applies to Andre Hugo's original implementation and documentation, not to linked articles, third-party works, model names or trademarks. These are independent implementations of published equations, coefficients and scoring point values, with original surrounding wording. No source article, spreadsheet, copyrighted questionnaire layout, logo, font or other third-party image asset is redistributed. CIWA-Ar anchors are attributed to the instrument that explicitly permits free reproduction; the publisher/form layout is not copied. Citations are scientific attribution, not a permission grant or an endorsement. No legal or regulatory certification is claimed.
 
 The Framingham calculator is not affiliated with or endorsed by the Framingham Heart Study.
 
@@ -84,6 +84,21 @@ The Framingham calculator is not affiliated with or endorsed by the Framingham H
 ### Cockcroft–Gault creatinine clearance
 
 - [Cockcroft & Gault, Nephron 1976](https://pubmed.ncbi.nlm.nih.gov/1244564/)
+
+## Batch A scientific sources and instrument notice
+
+- [Canet et al., Anesthesiology 2010, original ARISCAT Tables 6–7](https://pubmed.ncbi.nlm.nih.gov/21045639/)
+- [Apgar, Curr Res Anesth Analg 1953](https://pubmed.ncbi.nlm.nih.gov/13083014/)
+- [Sullivan et al., Br J Addict 1989, CIWA-Ar](https://pubmed.ncbi.nlm.nih.gov/2597811/)
+- [CIWA-Ar form](https://umem.org/files/uploads/1104212257_CIWA-Ar.pdf): explicitly states “The CIWA-Ar is not copyrighted and may be reproduced freely.” Factual anchors are attributed; no publisher layout or dosing protocol is reproduced.
+- [Westley et al., Am J Dis Child 1978](https://pubmed.ncbi.nlm.nih.gov/347921/)
+- [NCBI Bookshelf / StatPearls, Eosinophilia](https://www.ncbi.nlm.nih.gov/books/NBK560792/)
+- [ACOG CO700, Methods for Estimating the Due Date (2017)](https://www.acog.org/clinical/clinical-guidance/committee-opinion/articles/2017/05/methods-for-estimating-the-due-date)
+- [Holliday & Segar, Pediatrics 1957](https://pubmed.ncbi.nlm.nih.gov/13431307/)
+- [Oxford CEBM, Likelihood ratios](https://www.cebm.ox.ac.uk/resources/ebm-tools/likelihood-ratios)
+- [KDIGO 2024 CKD Guideline](https://kdigo.org/wp-content/uploads/2024/03/KDIGO-2024-CKD-Guideline.pdf)
+
+See [Batch A scope and exact conversions](docs/batch-a-clinical-guide.md). Scientific attribution is not author/institution endorsement or legal assurance.
 
 ## Host and development dependencies
 

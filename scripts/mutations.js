@@ -1,7 +1,9 @@
 // Mutations run only in isolated ignored copies; never edit tracked production files.
 import {readFile,writeFile,mkdir,cp,rm,readdir} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
+import {batchMutations} from './batch-a-mutations.js';
 const mutations=[
+ ...batchMutations,
  ['cholesterol-conversion','src/engine.js','value * 38.67','value * 1'],
  ['insulin-legacy-factor','src/engine.js','insulin / 6.0','insulin / 6.945'],
  ['insulin-unit-omitted','src/engine.js','insulin / 6.0','insulin / 1'],

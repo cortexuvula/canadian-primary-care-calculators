@@ -21,7 +21,7 @@ test('synthetic compiled after evidence matrix: real viewports, both themes, inv
  }}
  expect(new Set(measurements.map(m=>m.background)).size).toBe(2);expect(errors).toEqual([]);await writeFile(`${dir}/after-measurements.json`,JSON.stringify({browser:browser.version(),note:`Compiled plugin + real React + ${process.env.CPC_SDK_FIXTURE?'pinned public SDK Button/Input':'SDK control adapters'}; representative tokens; synthetic only, not live Desktop.`,errors,measurements},null,2)+'\n');
 });
-test('all fifteen grouped forms compute copy invalidate reset and expose sources across 12 reflow settings offline',async({page})=>{
+test('all twenty-six grouped forms compute copy invalidate reset and expose sources across 12 reflow settings offline',async({page})=>{
  test.setTimeout(600000);const runs=[];await page.goto('/');await expect(page.locator('h1')).toBeVisible();const requests=[],logs=[];page.on('request',r=>requests.push(r.url()));page.on('console',m=>logs.push(m.text()));page.on('pageerror',e=>logs.push(e.message));await page.context().setOffline(true);
  for(const theme of ['light','dark'])for(const width of [320,640,1200])for(const scale of [1,2]){
  await page.setViewportSize({width,height:1000});await page.evaluate(({theme,scale})=>{document.body.classList.toggle('dark',theme==='dark');document.documentElement.style.fontSize=16*scale+'px';},{theme,scale});

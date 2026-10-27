@@ -56,7 +56,7 @@ function Calculator({definition:d,ctx,active}) {
         <label htmlFor={`cpc-${f.id}`}>{f.label} ({f.unit})</label>
         {f.type==='choice'?<select id={`cpc-${f.id}`} value={view.draft[f.id]} autoComplete="off" aria-describedby={`cpc-${f.id}-help${view.errors[f.id]?` cpc-${f.id}-error`:''}`} aria-invalid={!!view.errors[f.id]} onChange={e=>send({type:'edit',field:f.id,value:e.target.value})}>
           <option value="">Not selected</option>{f.options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>:<Input id={`cpc-${f.id}`} type="text" inputMode="decimal" autoComplete="off" spellCheck={false} value={view.draft[f.id]} aria-invalid={!!view.errors[f.id]} aria-describedby={`cpc-${f.id}-help${view.errors[f.id]?` cpc-${f.id}-error`:''}`} onChange={e=>send({type:'edit',field:f.id,value:e.target.value})}/>}
+        </select>:<Input id={`cpc-${f.id}`} type={f.type==='date'?'date':'text'} inputMode={f.type==='number'?'decimal':'text'} autoComplete="off" spellCheck={false} value={view.draft[f.id]} aria-invalid={!!view.errors[f.id]} aria-describedby={`cpc-${f.id}-help${view.errors[f.id]?` cpc-${f.id}-error`:''}`} onChange={e=>send({type:'edit',field:f.id,value:e.target.value})}/>}
         {f.type==='choice'&&view.draft[f.id]&&<p id={`cpc-${f.id}-selected`} className={`cpc-selected-choice${f.options.find(o=>o.value===view.draft[f.id]).label.length<=30?' cpc-short-choice':''}`} aria-hidden="true">{f.options.find(o=>o.value===view.draft[f.id]).label}</p>}
         <p id={`cpc-${f.id}-help`} className="cpc-help">{f.help}</p>
         {view.errors[f.id]&&<p id={`cpc-${f.id}-error`} className="cpc-error">{view.errors[f.id]}</p>}

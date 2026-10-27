@@ -1,0 +1,7 @@
+// Independent Doc data only. Do not import the production engine/registry.
+import {readFileSync,writeFileSync} from 'node:fs';
+const raw=JSON.parse(readFileSync('tests/fixtures/doc-batch-a-vectors.json','utf8'));
+const precision={ariscat:{score:0},apgar:{score:0},'ciwa-ar':{score:0},'westley-croup':{score:0},aec:{aec109L:2,aecPerMicrolitre:0},'ga-from-edd':{weeks:0,days:0},'maintenance-fluids':{dailyVolumeMl:0},'posttest-lr':{posttestProbabilityPct:1},'posttest-sens-spec':{posttestProbabilityPct:1},'urine-acr':{acrMgMmol:1,acrMgG:0},'urine-pcr':{pcrMgMmol:1,pcrMgG:0}};
+const vectors=Object.fromEntries(Object.entries(raw.vectors).map(([id,d])=>[id,d.valid.map(v=>({id:v.id,inputs:{...Object.fromEntries(Object.entries(v.inputs).map(([k,n])=>[k,Array.isArray(n)?n.join(', '):String(n)])),...(['urine-acr','urine-pcr'].includes(id)?{outputUnit:'mg/mmol'}:{}),...(id==='posttest-lr'?{independent:'yes'}:{})},expected:Object.fromEntries(Object.entries(precision[id]).map(([k,n])=>[k,v.outputs[k].toFixed(n)])),provenance:`Doc independent Batch A ${id} ${v.id}; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only.`}))]));
+writeFileSync('src/batch-a-vectors.js','// Generated solely from independent Doc fixture; see scripts/normalize-batch-a-vectors.js.\nexport const batchVectors = '+JSON.stringify(vectors,null,2)+';\n');
+console.log('Normalized all eleven modules; no exclusions or numeric oracle edits.');

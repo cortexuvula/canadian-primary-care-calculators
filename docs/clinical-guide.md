@@ -2,7 +2,7 @@
 
 ## What's included
 
-**Included (15 calculators, 6 categories).** This plugin implements a fixed, named set of fifteen evidence-based calculators in Canadian units. It is **not** a comprehensive or universal clinical calculator library.
+**Included (26 calculators, 15 discovery categories).** This plugin implements a fixed, named set of twenty-six calculators in Canadian units. The original fifteen below are unchanged. The eleven authorized additions, sources, inputs, guards and limitations are documented in the [Batch A clinical guide](batch-a-clinical-guide.md). It is **not** a comprehensive or universal clinical calculator library.
 
 **Cardiovascular**
 - Framingham 10-year general CVD risk (D'Agostino 2008, with the CCS/BC Canadian reporting layer)
@@ -91,7 +91,7 @@ Each calculator reflects the population in which its source model was derived. K
 **What is not certified.** The numerical/source review does **not** constitute:
 - **Regulatory approval or classification.** **No claim of regulatory approval, clearance, or licensing is made, and no regulatory classification (medical device or otherwise) is asserted.** The absence of a claimed approval does not by itself establish device or non-device status. This software has **not** been reviewed, approved, cleared, or licensed by Health Canada, the FDA, or any other regulator (see the Disclaimer below).
 - **Live-host certification.** Automated tests run against the compiled plugin bytes in a headless harness with SDK control adapters (the pinned public SDK’s Button/Input implementations in the SDK test run). The full desktop loader, live sidebar mount, complete desktop theme/CSS, and the real operating-system clipboard are **not** exercised by the automated suite. Live-desktop and OS-clipboard behaviour should be treated as **unverified** at publication, not as passed.
-- **A universal calculator or treatment recommendation.** Scope is fixed at the 15 named calculators (see What’s included above).
+- **A universal calculator or treatment recommendation.** Scope is fixed at the 26 named calculators (see What’s included above).
 
 ## Disclaimer
 

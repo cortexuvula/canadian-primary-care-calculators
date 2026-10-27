@@ -1,7 +1,8 @@
 import {test,expect} from '@playwright/test';
 import {registry,summary} from '../src/registry.js';
 import {unsupported} from '../tests/unsupported-cases.js';
-const additions=registry.slice(3);
+// Original twelve v2 additions retain their complete journeys. Batch A has its own suite.
+const additions=registry.slice(3,15);
 import {choose} from './ui-helpers.js';
 const calc=page=>page.getByRole('button',{name:'Calculate',exact:true}).click();
 const result=page=>page.getByRole('region',{name:'Result',exact:true});
@@ -29,7 +30,7 @@ for(const d of additions){
  });
 }
 test('v2 expanded search, categories and ordered v1+v2 favourites; no clinical persistence',async({page})=>{
- await page.goto('/');expect(await page.locator('[data-testid^="select-"]').count()).toBe(registry.length);
+ await page.goto('/');await page.getByRole('button',{name:'Show more calculators',exact:true}).click();expect(await page.locator('[data-testid^="select-"]').count()).toBe(registry.length);
  for(const category of new Set(registry.map(d=>d.category)))await expect(page.getByRole('region',{name:category,exact:true})).toBeVisible();
  for(const d of additions){await page.getByLabel('Search calculators',{exact:true}).fill(d.aliases[0]);await expect(page.getByTestId('select-'+d.id)).toBeVisible();}
  await page.getByRole('button',{name:'Clear search'}).click();

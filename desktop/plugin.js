@@ -167,9 +167,9 @@ function cha2ds2Vasc(v) {
   choice(v.ageBand, "ageBand", Object.keys(CHA_AGE_POINTS));
   choice(v.sex, "sex", ["male", "female"]);
   let score = CHA_AGE_POINTS[v.ageBand] + Number(v.sex === "female");
-  for (const [field, points] of [["chf", 1], ["hypertension", 1], ["diabetes", 1], ["stroke", 2], ["vascular", 1]]) {
+  for (const [field, points2] of [["chf", 1], ["hypertension", 1], ["diabetes", 1], ["stroke", 2], ["vascular", 1]]) {
     choice(v[field], field);
-    score += Number(v[field] === "yes") * points;
+    score += Number(v[field] === "yes") * points2;
   }
   return { score, sexOnly: score === 1 && v.sex === "female" };
 }
@@ -1129,7 +1129,7 @@ var docVectors = {
 var source = (title, url) => ({ title, url, accessed: "2026-10-26" });
 var pubmed = (title, id) => source(title, `https://pubmed.ncbi.nlm.nih.gov/${id}/`);
 var number = (id, label, unit, help = "Positive finite decimal; numeric sanity guard, not a validated clinical range.") => ({ id, label, unit, help, type: "number" });
-var select = (id, label, options, help) => ({ id, label, unit: "choice (unitless)", type: "choice", help, options: options.map(([value, label2, points]) => ({ value, label: label2, ...points === void 0 ? {} : { points } })) });
+var select = (id, label, options, help) => ({ id, label, unit: "choice (unitless)", type: "choice", help, options: options.map(([value, label2, points2]) => ({ value, label: label2, ...points2 === void 0 ? {} : { points: points2 } })) });
 var yesno = (id, label, help) => select(id, label, [["yes", "Yes"], ["no", "No"]], help || "Explicit answer required; blank is not No.");
 var age2 = number("age", "Age", "completed years", "Completed whole years; 120 is an engineering sanity ceiling, not a validated upper age.");
 var weight = number("weight", "Weight", "kg");
@@ -1329,13 +1329,1469 @@ expansion.push(definition({
 }));
 for (const d of expansion) d.vectors = docVectors[d.id];
 
+// src/batch-a-engine.js
+var fail2 = (field, message) => {
+  throw new InputError(field, message);
+};
+function ariscat(v) {
+  const age4 = numeric(v.age, "age"), spo2 = numeric(v.spo2, "spo2"), hb = numeric(v.hb, "hb");
+  if (!Number.isInteger(age4) || age4 < 18) fail2("age", "Adult model: enter completed whole years ≥18.");
+  if (!Number.isInteger(spo2)) fail2("spo2", "SpO₂ must be a whole-number percentage (conservative source-fidelity guard).");
+  if (spo2 > 100) fail2("spo2", "SpO₂ must be greater than zero and ≤100%.");
+  choice(v.respiratoryInfection, "respiratoryInfection");
+  choice(v.emergency, "emergency");
+  choice(v.incision, "incision", ["peripheral", "upper-abdominal", "intrathoracic"]);
+  choice(v.duration, "duration", ["le2h", "2to3h", "gt3h"]);
+  const score = (age4 <= 50 ? 0 : age4 <= 80 ? 3 : 16) + (spo2 >= 96 ? 0 : spo2 > 90 ? 8 : 24) + Number(v.respiratoryInfection === "yes") * 17 + Number(hb <= 100) * 11 + { peripheral: 0, "upper-abdominal": 15, intrathoracic: 24 }[v.incision] + { le2h: 0, "2to3h": 16, gt3h: 23 }[v.duration] + Number(v.emergency === "yes") * 8;
+  return { score, riskClass: score < 26 ? "Low" : score < 45 ? "Intermediate" : "High" };
+}
+function points(v, fields) {
+  return fields.reduce((sum, [field, allowed]) => {
+    choice(String(v[field] ?? ""), field, allowed.map(String));
+    return sum + Number(v[field]);
+  }, 0);
+}
+function apgar(v) {
+  choice(v.timepoint, "timepoint", ["1min", "5min", "10min"]);
+  return { score: points(v, ["appearance", "pulse", "grimace", "activity", "respiration"].map((k) => [k, [0, 1, 2]])), timepoint: v.timepoint };
+}
+function ciwaAr(v) {
+  return { score: points(v, ["nausea", "tremor", "sweats", "anxiety", "agitation", "tactile", "auditory", "visual", "headache", "orientation"].map((k) => [k, Array.from({ length: k === "orientation" ? 5 : 8 }, (_, i) => i)])) };
+}
+function westley(v) {
+  return { score: points(v, [["consciousness", [0, 5]], ["cyanosis", [0, 4, 5]], ["stridor", [0, 1, 2]], ["airEntry", [0, 1, 2]], ["retractions", [0, 1, 2, 3]]]) };
+}
+function decimal(value, field) {
+  if (!["string", "number"].includes(typeof value) || !/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(String(value).trim()) || !Number.isFinite(Number(value))) fail2(field, "Enter a finite non-negative decimal in the labelled unit.");
+  return Number(value);
+}
+function finitePositive(n, field) {
+  if (!Number.isFinite(n) || n <= 0) fail2(field, "Numeric overflow/underflow: no interpretable result.");
+  return n;
+}
+function aec(v) {
+  const wbc = numeric(v.wbc, "wbc"), eos = decimal(v.eosinophils, "eosinophils");
+  if (eos > 100) fail2("eosinophils", "Enter eosinophils as a percentage from 0 to 100, not a fraction.");
+  const aec109L = wbc * eos / 100, aecPerMicrolitre = aec109L * 1e3;
+  if (!Number.isFinite(aecPerMicrolitre) || eos > 0 && aec109L === 0) fail2("eosinophils", "Numeric overflow/underflow: no interpretable count.");
+  return { aec109L, aecPerMicrolitre };
+}
+function civilDay(value, field) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) fail2(field, "Enter a civil date as YYYY-MM-DD.");
+  const [y, m, d] = value.split("-").map(Number);
+  if (y < 1) fail2(field, "Enter a valid Gregorian calendar date (year 0001–9999).");
+  const date = /* @__PURE__ */ new Date(0);
+  date.setUTCFullYear(y, m - 1, d);
+  date.setUTCHours(0, 0, 0, 0);
+  if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) fail2(field, "Enter a valid Gregorian calendar date.");
+  return date.getTime() / 864e5;
+}
+function gaFromEdd(v) {
+  const edd = civilDay(v.edd, "edd"), asOf = civilDay(v.asOf, "asOf"), daysToEdd = edd - asOf, gestationalDays = 280 - daysToEdd;
+  if (gestationalDays < 0 || gestationalDays > 322) fail2("asOf", "Unsupported date combination: calculated gestation must be 0–322 days (engineering plausibility guard, not a dating validation).");
+  return { weeks: Math.floor(gestationalDays / 7), days: gestationalDays % 7, gestationalDays, daysToEdd, postTerm: gestationalDays > 294, edd: v.edd, asOf: v.asOf };
+}
+function maintenanceFluids(v) {
+  const w = numeric(v.weightKg, "weightKg");
+  return { dailyVolumeMl: finitePositive(w <= 10 ? 100 * w : w <= 20 ? 1e3 + 50 * (w - 10) : 1500 + 20 * (w - 20), "weightKg") };
+}
+function probability(value, field) {
+  const n = numeric(value, field);
+  if (n >= 100) fail2(field, "Enter a probability strictly between 0 and 100%; impossible/certain events are unsupported.");
+  return n / 100;
+}
+function parseLrs(value) {
+  if (typeof value !== "string" || !value.trim()) fail2("likelihoodRatios", "Enter 1–20 positive finite likelihood ratios, separated by commas or whitespace.");
+  const groups = value.trim().split(",");
+  if (groups.some((x) => !x.trim())) fail2("likelihoodRatios", "Empty LR entries are not allowed.");
+  const tokens = groups.flatMap((x) => x.trim().split(/\s+/));
+  if (tokens.length > 20) fail2("likelihoodRatios", "Use at most 20 likelihood ratios (engineering limit).");
+  return tokens.map((x) => {
+    if (!/^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(x)) fail2("likelihoodRatios", "Enter numbers only, not expressions or risk/odds ratios.");
+    return finitePositive(Number(x), "likelihoodRatios");
+  });
+}
+function posterior(p, logLr, field) {
+  const logOdds = Math.log(p) - Math.log1p(-p) + logLr;
+  const q = logOdds >= 0 ? 1 / (1 + Math.exp(-logOdds)) : Math.exp(logOdds) / (1 + Math.exp(logOdds));
+  if (!Number.isFinite(q) || q <= 0 || q >= 1) fail2(field, "Numeric precision limit: cannot represent this estimate without implying certainty.");
+  return q * 100;
+}
+function posttestLr(v) {
+  const p = probability(v.pretestProbabilityPct, "pretestProbabilityPct"), lrs = parseLrs(v.likelihoodRatios);
+  if (lrs.length > 1) {
+    choice(v.independent, "independent");
+    if (v.independent !== "yes") fail2("independent", "Confirm conditional independence before chaining tests; dependent evidence can overstate certainty.");
+  }
+  return { posttestProbabilityPct: posterior(p, lrs.reduce((sum, n) => sum + Math.log(n), 0), "likelihoodRatios"), testCount: lrs.length };
+}
+function posttestSensSpec(v) {
+  const p = probability(v.pretestProbabilityPct, "pretestProbabilityPct"), s = probability(v.sensitivityPct, "sensitivityPct"), c = probability(v.specificityPct, "specificityPct");
+  choice(v.result, "result", ["positive", "negative"]);
+  const logLr = v.result === "positive" ? Math.log(s) - Math.log1p(-c) : Math.log1p(-s) - Math.log(c);
+  return { posttestProbabilityPct: posterior(p, logLr, "sensitivityPct"), result: v.result };
+}
+var CREATININE_MW = 113.12;
+function urineRatio(v, analyte, prefix) {
+  const value = numeric(v[analyte + "Value"], analyte + "Value"), creat = numeric(v.creatinineValue, "creatinineValue");
+  choice(v[analyte + "Unit"], analyte + "Unit", ["mg/L", "mg/dL"]);
+  choice(v.creatinineUnit, "creatinineUnit", ["mmol/L", "mg/dL"]);
+  choice(v.outputUnit, "outputUnit", ["mg/mmol", "mg/g"]);
+  const mgL = finitePositive(value * (v[analyte + "Unit"] === "mg/dL" ? 10 : 1), analyte + "Value");
+  const creatMmol = finitePositive(v.creatinineUnit === "mmol/L" ? creat : creat * 10 / CREATININE_MW, "creatinineValue");
+  const creatMgL = finitePositive(v.creatinineUnit === "mmol/L" ? creat * CREATININE_MW : creat * 10, "creatinineValue");
+  const si = finitePositive(mgL / creatMmol, "creatinineValue"), conventional = finitePositive(mgL / creatMgL * 1e3, "creatinineValue");
+  return { [prefix + "MgMmol"]: si, [prefix + "MgG"]: conventional, outputUnit: v.outputUnit };
+}
+function urineAcr(v) {
+  return urineRatio(v, "albumin", "acr");
+}
+function urinePcr(v) {
+  return urineRatio(v, "protein", "pcr");
+}
+
+// src/batch-a-vectors.js
+var batchVectors = {
+  "ariscat": [
+    {
+      "id": "V1",
+      "inputs": {
+        "age": "40",
+        "spo2": "98",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "0"
+      },
+      "provenance": "Doc independent Batch A ariscat V1; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V2",
+      "inputs": {
+        "age": "51",
+        "spo2": "98",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "3"
+      },
+      "provenance": "Doc independent Batch A ariscat V2; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V3",
+      "inputs": {
+        "age": "80",
+        "spo2": "98",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "3"
+      },
+      "provenance": "Doc independent Batch A ariscat V3; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V4",
+      "inputs": {
+        "age": "81",
+        "spo2": "98",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "16"
+      },
+      "provenance": "Doc independent Batch A ariscat V4; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V5",
+      "inputs": {
+        "age": "50",
+        "spo2": "98",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "0"
+      },
+      "provenance": "Doc independent Batch A ariscat V5; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V6",
+      "inputs": {
+        "age": "40",
+        "spo2": "96",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "0"
+      },
+      "provenance": "Doc independent Batch A ariscat V6; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V7",
+      "inputs": {
+        "age": "40",
+        "spo2": "95",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "8"
+      },
+      "provenance": "Doc independent Batch A ariscat V7; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V8",
+      "inputs": {
+        "age": "40",
+        "spo2": "91",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "8"
+      },
+      "provenance": "Doc independent Batch A ariscat V8; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V9",
+      "inputs": {
+        "age": "40",
+        "spo2": "90",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "24"
+      },
+      "provenance": "Doc independent Batch A ariscat V9; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V10",
+      "inputs": {
+        "age": "40",
+        "spo2": "98",
+        "respiratoryInfection": "yes",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "17"
+      },
+      "provenance": "Doc independent Batch A ariscat V10; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V11",
+      "inputs": {
+        "age": "40",
+        "spo2": "98",
+        "respiratoryInfection": "no",
+        "hb": "100",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "11"
+      },
+      "provenance": "Doc independent Batch A ariscat V11; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V12",
+      "inputs": {
+        "age": "40",
+        "spo2": "98",
+        "respiratoryInfection": "no",
+        "hb": "101",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "0"
+      },
+      "provenance": "Doc independent Batch A ariscat V12; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V13",
+      "inputs": {
+        "age": "40",
+        "spo2": "98",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "upper-abdominal",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "15"
+      },
+      "provenance": "Doc independent Batch A ariscat V13; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V14",
+      "inputs": {
+        "age": "40",
+        "spo2": "98",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "intrathoracic",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "24"
+      },
+      "provenance": "Doc independent Batch A ariscat V14; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V15",
+      "inputs": {
+        "age": "40",
+        "spo2": "98",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "2to3h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "16"
+      },
+      "provenance": "Doc independent Batch A ariscat V15; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V16",
+      "inputs": {
+        "age": "40",
+        "spo2": "98",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "gt3h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "23"
+      },
+      "provenance": "Doc independent Batch A ariscat V16; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V17",
+      "inputs": {
+        "age": "40",
+        "spo2": "98",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "yes"
+      },
+      "expected": {
+        "score": "8"
+      },
+      "provenance": "Doc independent Batch A ariscat V17; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V18",
+      "inputs": {
+        "age": "85",
+        "spo2": "85",
+        "respiratoryInfection": "yes",
+        "hb": "90",
+        "incision": "intrathoracic",
+        "duration": "gt3h",
+        "emergency": "yes"
+      },
+      "expected": {
+        "score": "123"
+      },
+      "provenance": "Doc independent Batch A ariscat V18; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V19",
+      "inputs": {
+        "age": "55",
+        "spo2": "98",
+        "respiratoryInfection": "no",
+        "hb": "140",
+        "incision": "peripheral",
+        "duration": "gt3h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "26"
+      },
+      "provenance": "Doc independent Batch A ariscat V19; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V20",
+      "inputs": {
+        "age": "85",
+        "spo2": "98",
+        "respiratoryInfection": "yes",
+        "hb": "100",
+        "incision": "peripheral",
+        "duration": "le2h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "44"
+      },
+      "provenance": "Doc independent Batch A ariscat V20; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V21",
+      "inputs": {
+        "age": "55",
+        "spo2": "92",
+        "respiratoryInfection": "no",
+        "hb": "100",
+        "incision": "peripheral",
+        "duration": "gt3h",
+        "emergency": "no"
+      },
+      "expected": {
+        "score": "45"
+      },
+      "provenance": "Doc independent Batch A ariscat V21; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    }
+  ],
+  "apgar": [
+    {
+      "id": "V1",
+      "inputs": {
+        "timepoint": "5min",
+        "appearance": "2",
+        "pulse": "2",
+        "grimace": "2",
+        "activity": "2",
+        "respiration": "2"
+      },
+      "expected": {
+        "score": "10"
+      },
+      "provenance": "Doc independent Batch A apgar V1; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V2",
+      "inputs": {
+        "timepoint": "1min",
+        "appearance": "0",
+        "pulse": "0",
+        "grimace": "0",
+        "activity": "0",
+        "respiration": "0"
+      },
+      "expected": {
+        "score": "0"
+      },
+      "provenance": "Doc independent Batch A apgar V2; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V3",
+      "inputs": {
+        "timepoint": "5min",
+        "appearance": "1",
+        "pulse": "1",
+        "grimace": "1",
+        "activity": "1",
+        "respiration": "1"
+      },
+      "expected": {
+        "score": "5"
+      },
+      "provenance": "Doc independent Batch A apgar V3; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V4",
+      "inputs": {
+        "timepoint": "1min",
+        "appearance": "1",
+        "pulse": "2",
+        "grimace": "1",
+        "activity": "2",
+        "respiration": "2"
+      },
+      "expected": {
+        "score": "8"
+      },
+      "provenance": "Doc independent Batch A apgar V4; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V5",
+      "inputs": {
+        "timepoint": "10min",
+        "appearance": "1",
+        "pulse": "1",
+        "grimace": "1",
+        "activity": "1",
+        "respiration": "1"
+      },
+      "expected": {
+        "score": "5"
+      },
+      "provenance": "Doc independent Batch A apgar V5; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V6",
+      "inputs": {
+        "timepoint": "1min",
+        "appearance": "1",
+        "pulse": "0",
+        "grimace": "1",
+        "activity": "0",
+        "respiration": "0"
+      },
+      "expected": {
+        "score": "2"
+      },
+      "provenance": "Doc independent Batch A apgar V6; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    }
+  ],
+  "ciwa-ar": [
+    {
+      "id": "V1",
+      "inputs": {
+        "nausea": "0",
+        "tremor": "0",
+        "sweats": "0",
+        "anxiety": "0",
+        "agitation": "0",
+        "tactile": "0",
+        "auditory": "0",
+        "visual": "0",
+        "headache": "0",
+        "orientation": "0"
+      },
+      "expected": {
+        "score": "0"
+      },
+      "provenance": "Doc independent Batch A ciwa-ar V1; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V2",
+      "inputs": {
+        "nausea": "7",
+        "tremor": "7",
+        "sweats": "7",
+        "anxiety": "7",
+        "agitation": "7",
+        "tactile": "7",
+        "auditory": "7",
+        "visual": "7",
+        "headache": "7",
+        "orientation": "4"
+      },
+      "expected": {
+        "score": "67"
+      },
+      "provenance": "Doc independent Batch A ciwa-ar V2; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V3",
+      "inputs": {
+        "nausea": "1",
+        "tremor": "1",
+        "sweats": "1",
+        "anxiety": "1",
+        "agitation": "1",
+        "tactile": "1",
+        "auditory": "1",
+        "visual": "1",
+        "headache": "1",
+        "orientation": "1"
+      },
+      "expected": {
+        "score": "10"
+      },
+      "provenance": "Doc independent Batch A ciwa-ar V3; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V4",
+      "inputs": {
+        "nausea": "0",
+        "tremor": "0",
+        "sweats": "0",
+        "anxiety": "0",
+        "agitation": "0",
+        "tactile": "0",
+        "auditory": "0",
+        "visual": "0",
+        "headache": "0",
+        "orientation": "4"
+      },
+      "expected": {
+        "score": "4"
+      },
+      "provenance": "Doc independent Batch A ciwa-ar V4; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V5",
+      "inputs": {
+        "nausea": "2",
+        "tremor": "3",
+        "sweats": "2",
+        "anxiety": "4",
+        "agitation": "3",
+        "tactile": "1",
+        "auditory": "2",
+        "visual": "2",
+        "headache": "3",
+        "orientation": "1"
+      },
+      "expected": {
+        "score": "23"
+      },
+      "provenance": "Doc independent Batch A ciwa-ar V5; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V6",
+      "inputs": {
+        "nausea": "7",
+        "tremor": "7",
+        "sweats": "7",
+        "anxiety": "7",
+        "agitation": "7",
+        "tactile": "7",
+        "auditory": "7",
+        "visual": "7",
+        "headache": "7",
+        "orientation": "0"
+      },
+      "expected": {
+        "score": "63"
+      },
+      "provenance": "Doc independent Batch A ciwa-ar V6; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    }
+  ],
+  "westley-croup": [
+    {
+      "id": "V1",
+      "inputs": {
+        "consciousness": "0",
+        "cyanosis": "0",
+        "stridor": "0",
+        "airEntry": "0",
+        "retractions": "0"
+      },
+      "expected": {
+        "score": "0"
+      },
+      "provenance": "Doc independent Batch A westley-croup V1; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V2",
+      "inputs": {
+        "consciousness": "5",
+        "cyanosis": "5",
+        "stridor": "2",
+        "airEntry": "2",
+        "retractions": "3"
+      },
+      "expected": {
+        "score": "17"
+      },
+      "provenance": "Doc independent Batch A westley-croup V2; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V3",
+      "inputs": {
+        "consciousness": "0",
+        "cyanosis": "0",
+        "stridor": "1",
+        "airEntry": "0",
+        "retractions": "0"
+      },
+      "expected": {
+        "score": "1"
+      },
+      "provenance": "Doc independent Batch A westley-croup V3; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V4",
+      "inputs": {
+        "consciousness": "0",
+        "cyanosis": "0",
+        "stridor": "2",
+        "airEntry": "1",
+        "retractions": "2"
+      },
+      "expected": {
+        "score": "5"
+      },
+      "provenance": "Doc independent Batch A westley-croup V4; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V5",
+      "inputs": {
+        "consciousness": "0",
+        "cyanosis": "4",
+        "stridor": "1",
+        "airEntry": "1",
+        "retractions": "1"
+      },
+      "expected": {
+        "score": "7"
+      },
+      "provenance": "Doc independent Batch A westley-croup V5; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V6",
+      "inputs": {
+        "consciousness": "0",
+        "cyanosis": "5",
+        "stridor": "2",
+        "airEntry": "2",
+        "retractions": "2"
+      },
+      "expected": {
+        "score": "11"
+      },
+      "provenance": "Doc independent Batch A westley-croup V6; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V7",
+      "inputs": {
+        "consciousness": "5",
+        "cyanosis": "0",
+        "stridor": "2",
+        "airEntry": "2",
+        "retractions": "3"
+      },
+      "expected": {
+        "score": "12"
+      },
+      "provenance": "Doc independent Batch A westley-croup V7; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V8",
+      "inputs": {
+        "consciousness": "0",
+        "cyanosis": "4",
+        "stridor": "2",
+        "airEntry": "2",
+        "retractions": "3"
+      },
+      "expected": {
+        "score": "11"
+      },
+      "provenance": "Doc independent Batch A westley-croup V8; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    }
+  ],
+  "aec": [
+    {
+      "id": "V1",
+      "inputs": {
+        "wbc": "8",
+        "eosinophils": "5"
+      },
+      "expected": {
+        "aec109L": "0.40",
+        "aecPerMicrolitre": "400"
+      },
+      "provenance": "Doc independent Batch A aec V1; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V2",
+      "inputs": {
+        "wbc": "12.3",
+        "eosinophils": "8.5"
+      },
+      "expected": {
+        "aec109L": "1.05",
+        "aecPerMicrolitre": "1046"
+      },
+      "provenance": "Doc independent Batch A aec V2; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V3",
+      "inputs": {
+        "wbc": "7.5",
+        "eosinophils": "20"
+      },
+      "expected": {
+        "aec109L": "1.50",
+        "aecPerMicrolitre": "1500"
+      },
+      "provenance": "Doc independent Batch A aec V3; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V4",
+      "inputs": {
+        "wbc": "10",
+        "eosinophils": "0"
+      },
+      "expected": {
+        "aec109L": "0.00",
+        "aecPerMicrolitre": "0"
+      },
+      "provenance": "Doc independent Batch A aec V4; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V5",
+      "inputs": {
+        "wbc": "4.2",
+        "eosinophils": "1"
+      },
+      "expected": {
+        "aec109L": "0.04",
+        "aecPerMicrolitre": "42"
+      },
+      "provenance": "Doc independent Batch A aec V5; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V6",
+      "inputs": {
+        "wbc": "9.99",
+        "eosinophils": "3.3"
+      },
+      "expected": {
+        "aec109L": "0.33",
+        "aecPerMicrolitre": "330"
+      },
+      "provenance": "Doc independent Batch A aec V6; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    }
+  ],
+  "ga-from-edd": [
+    {
+      "id": "V1",
+      "inputs": {
+        "edd": "2026-11-01",
+        "asOf": "2026-10-01"
+      },
+      "expected": {
+        "weeks": "35",
+        "days": "4"
+      },
+      "provenance": "Doc independent Batch A ga-from-edd V1; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V2",
+      "inputs": {
+        "edd": "2026-11-01",
+        "asOf": "2026-11-01"
+      },
+      "expected": {
+        "weeks": "40",
+        "days": "0"
+      },
+      "provenance": "Doc independent Batch A ga-from-edd V2; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V3",
+      "inputs": {
+        "edd": "2027-01-01",
+        "asOf": "2026-06-01"
+      },
+      "expected": {
+        "weeks": "9",
+        "days": "3"
+      },
+      "provenance": "Doc independent Batch A ga-from-edd V3; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V4",
+      "inputs": {
+        "edd": "2024-03-01",
+        "asOf": "2023-12-01"
+      },
+      "expected": {
+        "weeks": "27",
+        "days": "0"
+      },
+      "provenance": "Doc independent Batch A ga-from-edd V4; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V5",
+      "inputs": {
+        "edd": "2026-10-01",
+        "asOf": "2026-10-21"
+      },
+      "expected": {
+        "weeks": "42",
+        "days": "6"
+      },
+      "provenance": "Doc independent Batch A ga-from-edd V5; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V6",
+      "inputs": {
+        "edd": "2026-12-01",
+        "asOf": "2026-09-01"
+      },
+      "expected": {
+        "weeks": "27",
+        "days": "0"
+      },
+      "provenance": "Doc independent Batch A ga-from-edd V6; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    }
+  ],
+  "maintenance-fluids": [
+    {
+      "id": "V1",
+      "inputs": {
+        "weightKg": "5"
+      },
+      "expected": {
+        "dailyVolumeMl": "500"
+      },
+      "provenance": "Doc independent Batch A maintenance-fluids V1; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V2",
+      "inputs": {
+        "weightKg": "10"
+      },
+      "expected": {
+        "dailyVolumeMl": "1000"
+      },
+      "provenance": "Doc independent Batch A maintenance-fluids V2; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V3",
+      "inputs": {
+        "weightKg": "15"
+      },
+      "expected": {
+        "dailyVolumeMl": "1250"
+      },
+      "provenance": "Doc independent Batch A maintenance-fluids V3; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V4",
+      "inputs": {
+        "weightKg": "20"
+      },
+      "expected": {
+        "dailyVolumeMl": "1500"
+      },
+      "provenance": "Doc independent Batch A maintenance-fluids V4; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V5",
+      "inputs": {
+        "weightKg": "25"
+      },
+      "expected": {
+        "dailyVolumeMl": "1600"
+      },
+      "provenance": "Doc independent Batch A maintenance-fluids V5; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V6",
+      "inputs": {
+        "weightKg": "30"
+      },
+      "expected": {
+        "dailyVolumeMl": "1700"
+      },
+      "provenance": "Doc independent Batch A maintenance-fluids V6; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V7",
+      "inputs": {
+        "weightKg": "10.5"
+      },
+      "expected": {
+        "dailyVolumeMl": "1025"
+      },
+      "provenance": "Doc independent Batch A maintenance-fluids V7; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V8",
+      "inputs": {
+        "weightKg": "20.5"
+      },
+      "expected": {
+        "dailyVolumeMl": "1510"
+      },
+      "provenance": "Doc independent Batch A maintenance-fluids V8; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V9",
+      "inputs": {
+        "weightKg": "70"
+      },
+      "expected": {
+        "dailyVolumeMl": "2500"
+      },
+      "provenance": "Doc independent Batch A maintenance-fluids V9; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    }
+  ],
+  "posttest-lr": [
+    {
+      "id": "V1",
+      "inputs": {
+        "pretestProbabilityPct": "50",
+        "likelihoodRatios": "2",
+        "independent": "yes"
+      },
+      "expected": {
+        "posttestProbabilityPct": "66.7"
+      },
+      "provenance": "Doc independent Batch A posttest-lr V1; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V2",
+      "inputs": {
+        "pretestProbabilityPct": "50",
+        "likelihoodRatios": "0.5",
+        "independent": "yes"
+      },
+      "expected": {
+        "posttestProbabilityPct": "33.3"
+      },
+      "provenance": "Doc independent Batch A posttest-lr V2; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V3",
+      "inputs": {
+        "pretestProbabilityPct": "20",
+        "likelihoodRatios": "5, 2",
+        "independent": "yes"
+      },
+      "expected": {
+        "posttestProbabilityPct": "71.4"
+      },
+      "provenance": "Doc independent Batch A posttest-lr V3; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V4",
+      "inputs": {
+        "pretestProbabilityPct": "20",
+        "likelihoodRatios": "1",
+        "independent": "yes"
+      },
+      "expected": {
+        "posttestProbabilityPct": "20.0"
+      },
+      "provenance": "Doc independent Batch A posttest-lr V4; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V5",
+      "inputs": {
+        "pretestProbabilityPct": "1",
+        "likelihoodRatios": "100",
+        "independent": "yes"
+      },
+      "expected": {
+        "posttestProbabilityPct": "50.3"
+      },
+      "provenance": "Doc independent Batch A posttest-lr V5; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V6",
+      "inputs": {
+        "pretestProbabilityPct": "99",
+        "likelihoodRatios": "0.01",
+        "independent": "yes"
+      },
+      "expected": {
+        "posttestProbabilityPct": "49.7"
+      },
+      "provenance": "Doc independent Batch A posttest-lr V6; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V7",
+      "inputs": {
+        "pretestProbabilityPct": "10",
+        "likelihoodRatios": "3, 0.5, 4",
+        "independent": "yes"
+      },
+      "expected": {
+        "posttestProbabilityPct": "40.0"
+      },
+      "provenance": "Doc independent Batch A posttest-lr V7; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    }
+  ],
+  "posttest-sens-spec": [
+    {
+      "id": "V1",
+      "inputs": {
+        "pretestProbabilityPct": "20",
+        "sensitivityPct": "90",
+        "specificityPct": "95",
+        "result": "positive"
+      },
+      "expected": {
+        "posttestProbabilityPct": "81.8"
+      },
+      "provenance": "Doc independent Batch A posttest-sens-spec V1; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V2",
+      "inputs": {
+        "pretestProbabilityPct": "20",
+        "sensitivityPct": "90",
+        "specificityPct": "95",
+        "result": "negative"
+      },
+      "expected": {
+        "posttestProbabilityPct": "2.6"
+      },
+      "provenance": "Doc independent Batch A posttest-sens-spec V2; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V3",
+      "inputs": {
+        "pretestProbabilityPct": "50",
+        "sensitivityPct": "80",
+        "specificityPct": "60",
+        "result": "positive"
+      },
+      "expected": {
+        "posttestProbabilityPct": "66.7"
+      },
+      "provenance": "Doc independent Batch A posttest-sens-spec V3; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V4",
+      "inputs": {
+        "pretestProbabilityPct": "50",
+        "sensitivityPct": "80",
+        "specificityPct": "60",
+        "result": "negative"
+      },
+      "expected": {
+        "posttestProbabilityPct": "25.0"
+      },
+      "provenance": "Doc independent Batch A posttest-sens-spec V4; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V5",
+      "inputs": {
+        "pretestProbabilityPct": "10",
+        "sensitivityPct": "99",
+        "specificityPct": "99",
+        "result": "positive"
+      },
+      "expected": {
+        "posttestProbabilityPct": "91.7"
+      },
+      "provenance": "Doc independent Batch A posttest-sens-spec V5; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V6",
+      "inputs": {
+        "pretestProbabilityPct": "10",
+        "sensitivityPct": "99",
+        "specificityPct": "99",
+        "result": "negative"
+      },
+      "expected": {
+        "posttestProbabilityPct": "0.1"
+      },
+      "provenance": "Doc independent Batch A posttest-sens-spec V6; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    }
+  ],
+  "urine-acr": [
+    {
+      "id": "V1",
+      "inputs": {
+        "albuminValue": "30",
+        "albuminUnit": "mg/L",
+        "creatinineValue": "10",
+        "creatinineUnit": "mmol/L",
+        "outputUnit": "mg/mmol"
+      },
+      "expected": {
+        "acrMgMmol": "3.0",
+        "acrMgG": "27"
+      },
+      "provenance": "Doc independent Batch A urine-acr V1; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V2",
+      "inputs": {
+        "albuminValue": "30",
+        "albuminUnit": "mg/dL",
+        "creatinineValue": "100",
+        "creatinineUnit": "mg/dL",
+        "outputUnit": "mg/mmol"
+      },
+      "expected": {
+        "acrMgMmol": "33.9",
+        "acrMgG": "300"
+      },
+      "provenance": "Doc independent Batch A urine-acr V2; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V3",
+      "inputs": {
+        "albuminValue": "15",
+        "albuminUnit": "mg/L",
+        "creatinineValue": "8.5",
+        "creatinineUnit": "mmol/L",
+        "outputUnit": "mg/mmol"
+      },
+      "expected": {
+        "acrMgMmol": "1.8",
+        "acrMgG": "16"
+      },
+      "provenance": "Doc independent Batch A urine-acr V3; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V4",
+      "inputs": {
+        "albuminValue": "300",
+        "albuminUnit": "mg/L",
+        "creatinineValue": "10",
+        "creatinineUnit": "mmol/L",
+        "outputUnit": "mg/mmol"
+      },
+      "expected": {
+        "acrMgMmol": "30.0",
+        "acrMgG": "265"
+      },
+      "provenance": "Doc independent Batch A urine-acr V4; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V6",
+      "inputs": {
+        "albuminValue": "3",
+        "albuminUnit": "mg/L",
+        "creatinineValue": "15",
+        "creatinineUnit": "mmol/L",
+        "outputUnit": "mg/mmol"
+      },
+      "expected": {
+        "acrMgMmol": "0.2",
+        "acrMgG": "2"
+      },
+      "provenance": "Doc independent Batch A urine-acr V6; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V5",
+      "inputs": {
+        "albuminValue": "3",
+        "albuminUnit": "mg/dL",
+        "creatinineValue": "113.12",
+        "creatinineUnit": "mg/dL",
+        "outputUnit": "mg/mmol"
+      },
+      "expected": {
+        "acrMgMmol": "3.0",
+        "acrMgG": "27"
+      },
+      "provenance": "Doc independent Batch A urine-acr V5; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    }
+  ],
+  "urine-pcr": [
+    {
+      "id": "V1",
+      "inputs": {
+        "proteinValue": "300",
+        "proteinUnit": "mg/L",
+        "creatinineValue": "10",
+        "creatinineUnit": "mmol/L",
+        "outputUnit": "mg/mmol"
+      },
+      "expected": {
+        "pcrMgMmol": "30.0",
+        "pcrMgG": "265"
+      },
+      "provenance": "Doc independent Batch A urine-pcr V1; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V2",
+      "inputs": {
+        "proteinValue": "150",
+        "proteinUnit": "mg/dL",
+        "creatinineValue": "100",
+        "creatinineUnit": "mg/dL",
+        "outputUnit": "mg/mmol"
+      },
+      "expected": {
+        "pcrMgMmol": "169.7",
+        "pcrMgG": "1500"
+      },
+      "provenance": "Doc independent Batch A urine-pcr V2; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V3",
+      "inputs": {
+        "proteinValue": "500",
+        "proteinUnit": "mg/L",
+        "creatinineValue": "7",
+        "creatinineUnit": "mmol/L",
+        "outputUnit": "mg/mmol"
+      },
+      "expected": {
+        "pcrMgMmol": "71.4",
+        "pcrMgG": "631"
+      },
+      "provenance": "Doc independent Batch A urine-pcr V3; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    },
+    {
+      "id": "V4",
+      "inputs": {
+        "proteinValue": "3000",
+        "proteinUnit": "mg/L",
+        "creatinineValue": "10",
+        "creatinineUnit": "mmol/L",
+        "outputUnit": "mg/mmol"
+      },
+      "expected": {
+        "pcrMgMmol": "300.0",
+        "pcrMgG": "2652"
+      },
+      "provenance": "Doc independent Batch A urine-pcr V4; raw fixture preserved; explicit SI reporting / independence acknowledgement added by harness only."
+    }
+  ]
+};
+
+// src/batch-a-registry.js
+var source2 = (title, url) => ({ title, url, accessed: "2026-10-27" });
+var pubmed2 = (title, id) => source2(title, `https://pubmed.ncbi.nlm.nih.gov/${id}/`);
+var number2 = (id, label, unit, help = "Positive finite decimal; numeric sanity guard, not a validated clinical range.") => ({ id, label, unit, help, type: "number" });
+var select2 = (id, label, pairs, help = "Explicit selection required; blank is never an answer.") => ({ id, label, unit: "choice (unitless)", type: "choice", help, options: pairs.map(([value, label2]) => ({ value: String(value), label: label2 })) });
+var yesno2 = (id, label, help) => select2(id, label, [["yes", "Yes"], ["no", "No"]], help);
+var output = (key, label, unit, decimals = 0) => ({ key, label, unit, decimals });
+var definition2 = (d) => ({ clinicalReview: "Clinician decision support — verify applicability and consult the model references. Release review evidence is recorded in the project documentation.", validation: "All inputs required and deliberately entered. Finite numeric guards are engineering bounds, not validated clinical ranges. No clamping; full precision retained before display rounding.", conversion: "Canadian units as labelled; no conversion unless specified.", ...d, vectors: batchVectors[d.id] });
+var batchA = [
+  definition2({
+    id: "ariscat",
+    requestId: "R01",
+    name: "ARISCAT (Canet) preoperative pulmonary risk index in adults",
+    category: "Perioperative / Respiratory",
+    aliases: ["ARISCAT", "Canet", "PPC"],
+    version: "Canet 2010 — original seven-predictor ARISCAT",
+    endpoint: "Postoperative pulmonary-complication risk index; no Canadian-validated percentage.",
+    applicability: "Adults ≥18 undergoing in-hospital non-obstetric surgery with general, neuraxial or regional anaesthesia. Outside derivation: obstetric/pregnancy procedures, transplant, outpatient (<1 day), or preoperative intubation. Risk index only, not a treatment directive.",
+    method: "Sum seven terms: age ≤50/51–80/>80 = 0/3/16; room-air SpO₂ ≥96/91–95/≤90 = 0/8/24; infection 17; Hb ≤100 g/L 11; peripheral/upper-abdominal/intrathoracic incision 0/15/24; duration ≤2/(2,3]/>3 h 0/16/23; emergency 8. Range 0–123. Low <26, Intermediate 26–44, High ≥45 before rounding. SpO₂ must be a whole-number percentage; fractional values are rejected, never rounded (Doc-adjudicated source-fidelity guard).",
+    conversion: "Haemoglobin g/L: ≤100 g/L equals ≤10 g/dL; do not enter g/dL.",
+    inputs: [number2("age", "Age", "completed years", "Adult model; whole years ≥18."), number2("spo2", "Preoperative SpO₂ (room air, supine)", "%", "Whole-number percentage greater than zero and ≤100%; original bins ≤90, 91–95 and ≥96. Fractional entries are rejected, not rounded."), yesno2("respiratoryInfection", "Respiratory infection in the last month?", "Source definition: fever and antibiotic treatment."), number2("hb", "Preoperative haemoglobin", "g/L", "Anaemia term at ≤100 g/L, not 10 g/L."), select2("incision", "Surgical incision", [["peripheral", "Peripheral — 0 points"], ["upper-abdominal", "Upper abdominal — 15 points"], ["intrathoracic", "Intrathoracic — 24 points"]]), select2("duration", "Expected surgery duration", [["le2h", "≤2 hours — 0 points"], ["2to3h", ">2 to ≤3 hours — 16 points"], ["gt3h", ">3 hours — 23 points"]]), yesno2("emergency", "Emergency procedure?")],
+    outputs: [output("score", "ARISCAT", "points")],
+    calculate: ariscat,
+    interpretation: (r) => `${r.riskClass} ARISCAT class (unrounded score). Spanish/Catalan derivation, not Canadian-validated risk percentages. No treatment recommendation.`,
+    sources: [pubmed2("Canet et al., Anesthesiology 2010;113:1338–50 (Tables 6–7)", "21045639")]
+  }),
+  definition2({
+    id: "apgar",
+    requestId: "R04",
+    name: "Apgar score in newborns",
+    category: "Paediatrics / Neonatal",
+    aliases: ["Apgar", "newborn"],
+    version: "Apgar 1953 — five components, explicit timepoint",
+    endpoint: "Newborn assessment total at a stated observation timepoint, not a prognosis.",
+    applicability: "Newborns at delivery; trained-observer assessment. No resuscitation or treatment rule and no long-term neurologic prognosis from a single total.",
+    method: "Sum colour, heart rate, reflex irritability, muscle tone and respiration, each 0–2. Total 0–10. The required observation timepoint is not scored.",
+    inputs: [select2("timepoint", "Observation timepoint", [["1min", "1 minute"], ["5min", "5 minutes"], ["10min", "10 minutes (extended)"]]), select2("appearance", "Appearance / colour", [[0, "0 — Blue or pale"], [1, "1 — Pink body, blue extremities"], [2, "2 — Completely pink"]]), select2("pulse", "Pulse / heart rate", [[0, "0 — Absent"], [1, "1 — Below 100 bpm"], [2, "2 — At least 100 bpm"]]), select2("grimace", "Grimace / reflex irritability", [[0, "0 — No response"], [1, "1 — Grimace"], [2, "2 — Cough, sneeze or cry"]]), select2("activity", "Activity / muscle tone", [[0, "0 — Limp"], [1, "1 — Some flexion"], [2, "2 — Active motion"]]), select2("respiration", "Respiration", [[0, "0 — Absent"], [1, "1 — Slow or irregular"], [2, "2 — Good, crying"]])],
+    outputs: [output("score", "Apgar", "points / 10")],
+    calculate: apgar,
+    interpretation: (r) => `Apgar at ${{ "1min": "1 minute", "5min": "5 minutes", "10min": "10 minutes (extended)" }[r.timepoint]} = ${r.score}/10. Trained-observer assessment only; does not predict long-term neurologic outcome or direct resuscitation.`,
+    sources: [pubmed2("Apgar, Curr Res Anesth Analg 1953;32:260–7", "13083014")]
+  })
+];
+var ciwaItems = [
+  ["nausea", "Nausea and vomiting", { 0: "No nausea or vomiting", 1: "Mild nausea, no vomiting", 4: "Intermittent nausea with dry heaves", 7: "Constant nausea, frequent dry heaves and vomiting" }],
+  ["tremor", "Tremor (arms extended, fingers spread)", { 0: "None", 1: "Not visible; felt fingertip to fingertip", 4: "Moderate with arms extended", 7: "Severe even without arm extension" }],
+  ["sweats", "Paroxysmal sweats", { 0: "No visible sweat", 1: "Barely perceptible; palms moist", 4: "Forehead beads of sweat", 7: "Drenching sweats" }],
+  ["anxiety", "Anxiety", { 0: "At ease, no anxiety", 1: "Mild anxiety", 4: "Moderately anxious or guarded", 7: "Equivalent to acute panic states" }],
+  ["agitation", "Agitation", { 0: "Normal activity", 1: "Somewhat increased activity", 4: "Moderately restless / fidgety", 7: "Paces for most of interview or constantly thrashes" }],
+  ["tactile", "Tactile disturbances", { 0: "None", 1: "Very mild itching, pins/needles, burning or numbness", 2: "Mild sensory symptoms", 3: "Moderate sensory symptoms", 4: "Moderately severe hallucinations", 5: "Severe hallucinations", 6: "Extremely severe hallucinations", 7: "Continuous hallucinations" }],
+  ["auditory", "Auditory disturbances", { 0: "None", 1: "Very mild harshness or fright", 2: "Mild harshness or fright", 3: "Moderate harshness or fright", 4: "Moderately severe hallucinations", 5: "Severe hallucinations", 6: "Extremely severe hallucinations", 7: "Continuous hallucinations" }],
+  ["visual", "Visual disturbances", { 0: "None", 1: "Very mild sensitivity", 2: "Mild sensitivity", 3: "Moderate sensitivity", 4: "Moderately severe hallucinations", 5: "Severe hallucinations", 6: "Extremely severe hallucinations", 7: "Continuous hallucinations" }],
+  ["headache", "Headache / fullness in head", { 0: "None", 1: "Very mild", 2: "Mild", 3: "Moderate", 4: "Moderately severe", 5: "Severe", 6: "Very severe", 7: "Extremely severe" }],
+  ["orientation", "Orientation / clouding of sensorium", { 0: "Oriented; can perform serial additions", 1: "Cannot perform serial additions or uncertain date", 2: "Date disorientation by no more than 2 days", 3: "Date disorientation by more than 2 days", 4: "Disoriented for place or person" }]
+];
+batchA.push(definition2({
+  id: "ciwa-ar",
+  requestId: "R05",
+  name: "CIWA-Ar Clinical Institute Withdrawal Assessment for Alcohol scale in adults",
+  category: "Addiction / Withdrawal",
+  aliases: ["CIWA-Ar", "alcohol withdrawal"],
+  version: "Sullivan 1989 — CIWA-Ar observer-administered",
+  endpoint: "Current alcohol-withdrawal symptom severity score only; no dosing protocol.",
+  applicability: "Adults undergoing alcohol withdrawal, assessed by a trained observer with a patient able to communicate. Not a self-management tool. Communication impairment, delirium and other illnesses limit applicability. A low score does not rule out withdrawal.",
+  method: "Sum nine items 0–7 plus orientation 0–4; range 0–67. Use clinical observation and patient report. Intermediate points without source anchors are identified, not assigned invented definitions. No medication rule attached.",
+  inputs: ciwaItems.map(([id, label, anchors]) => select2(id, label, Array.from({ length: id === "orientation" ? 5 : 8 }, (_, i) => [i, `${i} — ${anchors[i] ?? "Intermediate rating (no separate source anchor)"}`]), id === "headache" ? "Rate headache/fullness, not dizziness or lightheadedness." : "Trained rater: use the stated source anchors and clinical observation; do not infer missing answers.")),
+  outputs: [output("score", "CIWA-Ar", "points / 67")],
+  calculate: ciwaAr,
+  interpretation: (r) => `CIWA-Ar = ${r.score}/67. Higher scores reflect greater current symptom severity. Observer-administered score only; no benzodiazepine dose, treatment rule or self-management protocol.`,
+  sources: [pubmed2("Sullivan et al., Br J Addict 1989;84:1353–7", "2597811"), source2("CIWA-Ar instrument — states not copyrighted and freely reproducible", "https://umem.org/files/uploads/1104212257_CIWA-Ar.pdf")]
+}));
+batchA.push(definition2({
+  id: "westley-croup",
+  requestId: "R07",
+  name: "Westley croup severity score (appropriate for use in children ≤6 years of age)",
+  category: "Paediatrics / Respiratory",
+  aliases: ["Westley", "croup"],
+  version: "Westley 1978 — original cyanosis-based score",
+  endpoint: "Five-sign croup severity score, not a diagnosis or treatment directive.",
+  applicability: "Requested scope: children ≤6 years. Original derivation 4 months–5 years; ages 5–6 extend beyond derivation. Age is applicability context, not a scored coefficient. Cyanosis is a late sign; a normal score does not replace pulse oximetry.",
+  method: "Sum consciousness 0/5, cyanosis 0/4/5, stridor 0/1/2, air entry 0/1/2 and retractions 0/1/2/3; range 0–17. Original cyanosis-based variant, not a modern SpO₂ threshold adaptation. Severity bands vary across sources; none is hard-coded.",
+  inputs: [select2("consciousness", "Consciousness", [[0, "0 — Normal, including sleep"], [5, "5 — Disoriented"]]), select2("cyanosis", "Cyanosis", [[0, "0 — None"], [4, "4 — With agitation"], [5, "5 — At rest"]]), select2("stridor", "Stridor", [[0, "0 — None"], [1, "1 — With agitation"], [2, "2 — At rest"]]), select2("airEntry", "Air entry", [[0, "0 — Normal"], [1, "1 — Decreased"], [2, "2 — Markedly decreased"]]), select2("retractions", "Retractions", [[0, "0 — None"], [1, "1 — Mild"], [2, "2 — Moderate"], [3, "3 — Severe"]])],
+  outputs: [output("score", "Westley", "points / 17")],
+  calculate: westley,
+  interpretation: (r) => `Westley = ${r.score}/17. Severity score only; does not establish croup or exclude epiglottitis, bacterial tracheitis or foreign body. Banding varies; no treatment directive.`,
+  sources: [pubmed2("Westley et al., Am J Dis Child 1978;132:484–7", "347921")]
+}));
+batchA.push(definition2({ id: "aec", requestId: "R08", name: "Absolute eosinophil count", category: "Haematology / Laboratory", aliases: ["AEC", "eosinophils"], version: "Absolute count from WBC × eosinophil percentage", endpoint: "Numeric absolute eosinophil count; no diagnostic threshold or classification.", applicability: "Interpret the laboratory differential and clinical context; this arithmetic does not diagnose eosinophilia or its cause.", method: "AEC (×10⁹/L) = WBC × eosinophil percentage / 100. Per microlitre = AEC ×1000. Full precision retained; 2 decimals in SI and whole /µL.", conversion: "×10⁹/L ×1000 = /µL.", inputs: [number2("wbc", "Total WBC", "×10⁹/L"), number2("eosinophils", "Eosinophils", "%", "Percentage, not fraction. Zero to 100 inclusive.")], outputs: [output("aec109L", "Absolute eosinophil count", "×10⁹/L", 2), output("aecPerMicrolitre", "Companion absolute count", "/µL")], calculate: aec, interpretation: () => "Numeric absolute count only; no diagnostic threshold or classification applied.", sources: [source2("NCBI Bookshelf / StatPearls, Eosinophilia", "https://www.ncbi.nlm.nih.gov/books/NBK560792/")] }));
+batchA.push(definition2({
+  id: "ga-from-edd",
+  requestId: "R25",
+  name: "Gestational age from estimated date of delivery (EDD)",
+  category: "Obstetrics / Dating",
+  aliases: ["gestational age", "EDD", "pregnancy dating"],
+  version: "Supplied EDD — explicit civil-date 280-day arithmetic",
+  endpoint: "Completed gestational weeks + days at the stated as-of date; not independent dating.",
+  applicability: "Inherits the uncertainty and provenance of the supplied EDD. No LMP, ultrasound or ART dating inference. The 0–322-day supported domain is an engineering plausibility guard, not a source-validated dating range.",
+  method: "Gestational days = 280 − calendar days from as-of date to EDD. Completed weeks = floor(days/7), remaining days = days mod 7. Strict Gregorian civil dates, timezone-safe. Reject <0 or >322 days; >294 days (>42+0) is a non-blocking post-term flag.",
+  inputs: [{ id: "edd", label: "Estimated date of delivery", unit: "civil date", type: "date", help: "Supplied EDD, YYYY-MM-DD. No date inferred." }, { id: "asOf", label: "As of", unit: "civil date", type: "date", help: "Explicit date of assessment, YYYY-MM-DD. No hidden current-date default." }],
+  outputs: [output("weeks", "Completed weeks", "weeks"), output("days", "Additional days", "days")],
+  calculate: gaFromEdd,
+  interpretation: (r) => `Gestational age ${r.weeks}+${r.days} as of ${r.asOf}, from supplied EDD ${r.edd}. Assumes a 280-day gestation and inherits EDD uncertainty; not a dating method.${r.postTerm ? " Past 42+0 (post-term flag); check dates and clinical context." : ""}`,
+  sources: [source2("ACOG Committee Opinion 700, Methods for Estimating the Due Date (2017)", "https://www.acog.org/clinical/clinical-guidance/committee-opinion/articles/2017/05/methods-for-estimating-the-due-date")]
+}));
+batchA.push(definition2({ id: "maintenance-fluids", requestId: "R32", name: "Maintenance fluid calculation for children based on daily fluid requirements", category: "Paediatrics / Fluid & electrolytes", aliases: ["Holliday-Segar", "daily fluids", "maintenance water"], version: "Holliday–Segar 1957 — daily 100/50/20 model", endpoint: "Daily maintenance water volume only, not a prescription.", applicability: "Otherwise well children needing maintenance only. Not for hypovolaemia/resuscitation, ongoing losses, renal or cardiac failure. Neonates require age-specific assessment. NICE NG29 flags reduced maintenance in overweight/obese children; no numeric cap invented.", method: "Weight ≤10 kg: 100×kg mL/day; >10 to ≤20: 1000+50×(kg−10); >20: 1500+20×(kg−20). No source cap applied. Daily model is not 4-2-1 hourly ×24 (96/48/24). No hourly output, fluid composition, resuscitation or automatic prescribing.", inputs: [number2("weightKg", "Weight", "kg")], outputs: [output("dailyVolumeMl", "Daily maintenance water", "mL/day")], calculate: maintenanceFluids, interpretation: () => "Holliday–Segar DAILY maintenance only; no electrolyte composition or prescribing. The 4-2-1 hourly shortcut is a separate approximation, not an identical daily model.", sources: [pubmed2("Holliday & Segar, Pediatrics 1957;19:823–32", "13431307"), source2("NICE NG29, Intravenous fluid therapy in children", "https://www.nice.org.uk/guidance/ng29")] }));
+var pretest = number2("pretestProbabilityPct", "Pre-test probability", "%", "Strictly greater than 0 and less than 100; impossible/certain events are rejected.");
+var bayesSource = [source2("Oxford CEBM, Likelihood ratios", "https://www.cebm.ox.ac.uk/resources/ebm-tools/likelihood-ratios")];
+batchA.push(definition2({ id: "posttest-lr", requestId: "R34", name: "Post-test probability from likelihood ratios and multiple test results", category: "Diagnostics / Bayesian", aliases: ["likelihood ratios", "Bayes LR", "posttest LR"], version: "Bayesian odds update — 1–20 explicit likelihood ratios", endpoint: "Post-test probability estimate, not a diagnosis.", applicability: "Use likelihood ratios, not risk ratios or odds ratios. Chained tests must be conditionally independent; dependent tests can overstate certainty. Validity depends on the supplied pre-test estimate and applicable test evidence.", method: "Odds = p/(1−p); posterior odds = odds × product of LRs; probability = posterior odds/(1+posterior odds). Implemented in log-odds space to avoid intermediate product overflow. Strict 0<p<1 and finite positive LRs. 1–20 is an engineering list bound. Unrepresentable endpoint probabilities block, never infinity→100%.", inputs: [pretest, { id: "likelihoodRatios", label: "Likelihood ratio(s)", unit: "LR (unitless)", type: "lr-list", help: "Enter 1–20 positive finite LRs, separated by commas or whitespace (e.g. 5, 2). Scientific notation is accepted. No expressions; not risk/odds ratios." }, yesno2("independent", "If chaining tests, conditional independence confirmed?", "Required for more than one LR; confirm the tests supply conditionally independent evidence. A single LR does not require this answer.")], outputs: [output("posttestProbabilityPct", "Post-test probability", "%", 1)], calculate: posttestLr, interpretation: (r) => `Probability estimate, not a diagnosis. ${r.testCount > 1 ? `${r.testCount} LRs chained: conditional independence acknowledged; dependent evidence may overstate certainty.` : "One likelihood ratio applied."} Depends on the supplied pre-test probability.`, sources: bayesSource }));
+batchA.push(definition2({ id: "posttest-sens-spec", requestId: "R35", name: "Post-test probability from pre-test probability, sensitivity, and specificity", category: "Diagnostics / Bayesian", aliases: ["sensitivity specificity", "Bayes test", "posttest sensitivity"], version: "Bayesian positive/negative post-test probability", endpoint: "Probability estimate for a deliberately selected positive or negative test result.", applicability: "Sensitivity and specificity must come from the same test and applicable population. Probability estimate only, not a diagnosis. Perfect/impossible test or prior events are unsupported.", method: "Positive LR = sensitivity/(1−specificity); negative LR = (1−sensitivity)/specificity. Update pre-test odds with the selected LR; compute stably in log space. All three percentages strictly between 0 and 100. Reject endpoints and numerical saturation, no blanket infinity→100% shortcut.", inputs: [pretest, number2("sensitivityPct", "Sensitivity", "%", "Strictly between 0 and 100; same test/population as specificity."), number2("specificityPct", "Specificity", "%", "Strictly between 0 and 100; same test/population as sensitivity."), select2("result", "Observed test result", [["positive", "Test result positive"], ["negative", "Test result negative"]])], outputs: [output("posttestProbabilityPct", "Post-test probability", "%", 1)], calculate: posttestSensSpec, interpretation: (r) => `Probability estimate for a ${r.result} test result, not a diagnosis. Sensitivity/specificity must describe the same test and population.`, sources: bayesSource }));
+for (const [id, requestId, analyte, prefix, title] of [["urine-acr", "R39", "albumin", "acr", "Spot urine albumin-to-creatinine ratio in adults (conventional and SI units)"], ["urine-pcr", "R40", "protein", "pcr", "Spot urine protein-to-creatinine ratio in adults"]]) batchA.push(definition2({ id, requestId, name: title, category: "Renal / Laboratory", aliases: [prefix.toUpperCase(), `urine ${analyte}`], version: `KDIGO 2024 units — same-sample ${analyte}/creatinine`, endpoint: `Numeric ${prefix.toUpperCase()} in Canadian SI and conventional units, no classification.`, applicability: `Adults; ${analyte === "protein" ? "total protein, not albumin" : "albumin, not total protein"} and creatinine from the SAME urine sample. A single result does not establish a diagnosis. ACR and PCR are distinct; no fixed conversion between analytes.`, method: `Convert urine ${analyte} mg/dL ×10 to mg/L. Creatinine mg/dL ×10/113.12 to mmol/L (or ×10 to mg/L); mmol/L ×113.12 to mg/L. SI = analyte mg/L / creatinine mmol/L. Conventional = analyte mg/L / creatinine mg/L ×1000. Both numeric outputs retained; selected reporting value emphasized in interpretation.`, conversion: "Creatinine MW 113.12 g/mol. Exact bridge mg/g = mg/mmol ×1000/113.12; inverse 0.11312. KDIGO rounded 0.113 and 3 mg/mmol ≈30 mg/g staging approximations are NOT arithmetic constants.", inputs: [number2(analyte + "Value", analyte === "protein" ? "Urine total protein" : "Urine albumin", "selected concentration unit"), select2(analyte + "Unit", `Urine ${analyte} unit`, [["mg/L", "mg/L — Canadian SI"], ["mg/dL", "mg/dL — conventional"]]), number2("creatinineValue", "Urine creatinine", "selected concentration unit"), select2("creatinineUnit", "Urine creatinine unit", [["mmol/L", "mmol/L — Canadian SI"], ["mg/dL", "mg/dL — conventional"]]), select2("outputUnit", "Preferred reporting unit", [["mg/mmol", "mg/mmol — Canadian SI"], ["mg/g", "mg/g — conventional"]])], outputs: [output(prefix + "MgMmol", prefix.toUpperCase(), "mg/mmol", 1), output(prefix + "MgG", "Companion ratio", "mg/g")], calculate: analyte === "protein" ? urinePcr : urineAcr, interpretation: (r) => `${prefix.toUpperCase()} selected reporting value: ${r[prefix + (r.outputUnit === "mg/mmol" ? "MgMmol" : "MgG")].toFixed(r.outputUnit === "mg/mmol" ? 1 : 0)} ${r.outputUnit}. Same-sample ${analyte === "protein" ? "total-protein" : "albumin"} ratio only; no diagnosis or classification from one result. No fixed PCR↔ACR conversion.`, sources: [source2("KDIGO 2024 CKD Guideline, Kidney Int 2024;105(Suppl 4S)", "https://kdigo.org/wp-content/uploads/2024/03/KDIGO-2024-CKD-Guideline.pdf")] }));
+
 // src/registry.js
-var source2 = (title, url) => ({ title, url, accessed: "2026-10-26" });
-var pubmed2 = (title, pmid) => source2(title, `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`);
-var number2 = (id, label, unit, help) => ({ id, label, unit, help, type: "number" });
-var yesno2 = (id, label, help) => ({ id, label, unit: "choice (unitless)", help, type: "choice", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] });
+var source3 = (title, url) => ({ title, url, accessed: "2026-10-26" });
+var pubmed3 = (title, pmid) => source3(title, `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`);
+var number3 = (id, label, unit, help) => ({ id, label, unit, help, type: "number" });
+var yesno3 = (id, label, help) => ({ id, label, unit: "choice (unitless)", help, type: "choice", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] });
 var sex = { id: "sex", label: "Sex used by the published equation", unit: "model category (unitless)", type: "choice", help: "The source model supplies male/female coefficients only; no inference from identity or treatment. Applicability outside these model categories is not established.", options: [{ value: "male", label: "Male coefficient" }, { value: "female", label: "Female coefficient" }] };
-var age3 = number2("age", "Age", "completed years", "Enter completed whole years; age limits below distinguish model applicability from engineering sanity guards.");
+var age3 = number3("age", "Age", "completed years", "Enter completed whole years; age limits below distinguish model applicability from engineering sanity guards.");
 var review = "Clinician decision support — verify applicability and consult the model references. Release review evidence is recorded in the project documentation.";
 var frsInputs = { sex: "male", age: "55", tc: "5.5", hdl: "1.1", sbp: "135", treated: "no", smoker: "no", diabetes: "no", cvd: "no", genetic: "no", bypass: "no", family: "no" };
 var homaInputs = { glucose: "5.8", insulin: "114", fasting: "yes", exogenous: "no", population: "yes" };
@@ -1353,8 +2809,8 @@ var registry = [
     conversion: "TC and HDL mmol/L × 38.67 = mg/dL. Exact public-tool bounds in Canadian units: TC 100/38.67 to 405/38.67 mmol/L; HDL 10/38.67 to 100/38.67 mmol/L. Approximate displayed decimals are not validation boundaries.",
     method: "Risk (%) = 100 × [1 − S0 ^ exp(ΣβX − C)]. Natural logs of age, TC/HDL in mg/dL and SBP. Men: S0=.88936, C=23.9802; β age=3.06117, TC=1.12370, HDL=−.93263, SBP untreated=1.93303 / treated=1.99881, smoker=.65451, diabetes=.57367. Women: S0=.95012, C=26.1931; β age=2.32888, TC=1.20904, HDL=−.70833, SBP untreated=2.76157 / treated=2.82263, smoker=.52873, diabetes=.69154. Indicators 0/1. Canadian reporting: multiply by 2 only for the specified family-history population. Low <10%, Intermediate ≥10% and <20%, High ≥20%, applied before display rounding. Paper point scores are approximations and can differ.",
     clinicalReview: review,
-    sources: [pubmed2("D’Agostino et al., Circulation 2008", "18212285"), source2("FHS official coefficients and lipid spreadsheet", "https://www.framinghamheartstudy.org/fhs-for-researchers/fhs-risk-functions/cardiovascular-disease-10-year-risk/"), source2("CCS FRS 2017", "https://ccs.ca/app/uploads/2020/12/FRS_eng_2017_fnl1.pdf"), source2("BC Guidelines Appendix B, December 2021", "https://www2.gov.bc.ca/assets/gov/health/practitioner-pro/bc-guidelines/gpac_cardiovasculardisease_appendixb_dec2021.pdf"), source2("BC CVD primary prevention guideline", "https://www2.gov.bc.ca/gov/content/health/practitioner-professional-resources/bc-guidelines/cardiovascular-disease")],
-    inputs: [sex, age3, number2("tc", "Total cholesterol", "mmol/L", "FHS public-tool bounds 100–405 mg/dL internally, approximately 2.586–10.473 mmol/L."), number2("hdl", "HDL cholesterol", "mmol/L", "FHS public-tool bounds 10–100 mg/dL internally, approximately 0.259–2.586 mmol/L; below total cholesterol."), number2("sbp", "Systolic blood pressure", "mmHg", "FHS public-tool bounds 90–200 mmHg."), yesno2("treated", "Receiving antihypertensive treatment?", "Select the treated or untreated coefficient deliberately."), yesno2("smoker", "Current smoker?", "Source-model smoking indicator."), yesno2("diabetes", "Diabetes?", "Source-model diabetes indicator. Separately assess whether a statin-indicated condition bypasses FRS."), yesno2("cvd", "Established CVD or heart failure?", "Includes coronary disease, stroke/TIA, PAD or HF. Yes blocks this primary-prevention tool."), yesno2("genetic", "Familial hypercholesterolaemia or genetic dyslipidaemia?", "Yes is outside this tool’s scope."), yesno2("bypass", "Other statin-indicated high-risk condition bypassing FRS?", "Clinician assessment required: e.g. clinical atherosclerosis/AAA; most diabetes by age/duration; CKD age ≥50 with eGFR <60 or ACR >3 mg/mmol. This is not an automated treatment checklist. Yes blocks the estimate."), yesno2("family", "Premature CVD in a first-degree relative?", "Relative affected before age 55 if male or before 65 if female. Canadian multiplier applies only if patient age 30–59 and no diabetes.")],
+    sources: [pubmed3("D’Agostino et al., Circulation 2008", "18212285"), source3("FHS official coefficients and lipid spreadsheet", "https://www.framinghamheartstudy.org/fhs-for-researchers/fhs-risk-functions/cardiovascular-disease-10-year-risk/"), source3("CCS FRS 2017", "https://ccs.ca/app/uploads/2020/12/FRS_eng_2017_fnl1.pdf"), source3("BC Guidelines Appendix B, December 2021", "https://www2.gov.bc.ca/assets/gov/health/practitioner-pro/bc-guidelines/gpac_cardiovasculardisease_appendixb_dec2021.pdf"), source3("BC CVD primary prevention guideline", "https://www2.gov.bc.ca/gov/content/health/practitioner-professional-resources/bc-guidelines/cardiovascular-disease")],
+    inputs: [sex, age3, number3("tc", "Total cholesterol", "mmol/L", "FHS public-tool bounds 100–405 mg/dL internally, approximately 2.586–10.473 mmol/L."), number3("hdl", "HDL cholesterol", "mmol/L", "FHS public-tool bounds 10–100 mg/dL internally, approximately 0.259–2.586 mmol/L; below total cholesterol."), number3("sbp", "Systolic blood pressure", "mmHg", "FHS public-tool bounds 90–200 mmHg."), yesno3("treated", "Receiving antihypertensive treatment?", "Select the treated or untreated coefficient deliberately."), yesno3("smoker", "Current smoker?", "Source-model smoking indicator."), yesno3("diabetes", "Diabetes?", "Source-model diabetes indicator. Separately assess whether a statin-indicated condition bypasses FRS."), yesno3("cvd", "Established CVD or heart failure?", "Includes coronary disease, stroke/TIA, PAD or HF. Yes blocks this primary-prevention tool."), yesno3("genetic", "Familial hypercholesterolaemia or genetic dyslipidaemia?", "Yes is outside this tool’s scope."), yesno3("bypass", "Other statin-indicated high-risk condition bypassing FRS?", "Clinician assessment required: e.g. clinical atherosclerosis/AAA; most diabetes by age/duration; CKD age ≥50 with eGFR <60 or ACR >3 mg/mmol. This is not an automated treatment checklist. Yes blocks the estimate."), yesno3("family", "Premature CVD in a first-degree relative?", "Relative affected before age 55 if male or before 65 if female. Canadian multiplier applies only if patient age 30–59 and no diabetes.")],
     outputs: [{ key: "risk", label: "Base equation risk", unit: "%", decimals: 1 }, { key: "modifiedRisk", label: "Canadian reporting risk", unit: "%", decimals: 1 }],
     calculate: framingham,
     interpretation: (r) => `${r.band} Canadian risk band, based on the unrounded Canadian reporting risk. ${r.modifierApplied ? "Premature-family-history doubling applied (Canadian adaptation, not part of the base equation)." : "Canadian family-history doubling not applicable."} Risk estimate only.`,
@@ -1372,8 +2828,8 @@ var registry = [
     conversion: "Insulin pmol/L ÷ 6.0 = mU/L (= µU/mL), per Doc’s human-insulin standard decision. Do not use the legacy ÷6.945 factor. The exact numeric recommendation in Knopp full text was inaccessible; this evidence limitation is disclosed in the tracked addendum.",
     method: "HOMA1-IR = fasting glucose (mmol/L) × fasting insulin (mU/L) / 22.5. Canadian insulin conversion pmol/L ÷ 6.0. No HOMA2 approximation, HOMA-B or QUICKI output. Display IR to 2 decimals, converted insulin to 1 decimal; internal precision retained.",
     clinicalReview: review,
-    sources: [pubmed2("Matthews et al., Diabetologia 1985", "3899825"), pubmed2("Knopp et al., insulin units, 2019 (abstract; numeric recommendation full text not retrieved)", "30318910"), pubmed2("Wallace et al., Use and abuse of HOMA modeling, 2004", "15161807")],
-    inputs: [number2("glucose", "Fasting glucose", "mmol/L", "Positive finite value. No unsourced universal cutoff or diagnostic interpretation."), number2("insulin", "Fasting insulin", "pmol/L", "Canadian laboratory unit. Converted internally by dividing by 6.0; do not enter mU/L."), yesno2("fasting", "Overnight fast ≥8 hours, water only?", "No blocks HOMA1."), yesno2("exogenous", "Using exogenous insulin?", "Yes blocks HOMA1. Assays may cross-react with insulin analogues."), yesno2("population", "Non-diabetic or early untreated dysglycaemia?", "No blocks this tool: established beta-cell failure and glucose-lowering treatment distort estimates.")],
+    sources: [pubmed3("Matthews et al., Diabetologia 1985", "3899825"), pubmed3("Knopp et al., insulin units, 2019 (abstract; numeric recommendation full text not retrieved)", "30318910"), pubmed3("Wallace et al., Use and abuse of HOMA modeling, 2004", "15161807")],
+    inputs: [number3("glucose", "Fasting glucose", "mmol/L", "Positive finite value. No unsourced universal cutoff or diagnostic interpretation."), number3("insulin", "Fasting insulin", "pmol/L", "Canadian laboratory unit. Converted internally by dividing by 6.0; do not enter mU/L."), yesno3("fasting", "Overnight fast ≥8 hours, water only?", "No blocks HOMA1."), yesno3("exogenous", "Using exogenous insulin?", "Yes blocks HOMA1. Assays may cross-react with insulin analogues."), yesno3("population", "Non-diabetic or early untreated dysglycaemia?", "No blocks this tool: established beta-cell failure and glucose-lowering treatment distort estimates.")],
     outputs: [{ key: "ir", label: "HOMA1-IR", unit: "index (unitless)", decimals: 2 }, { key: "insulinMu", label: "Converted fasting insulin", unit: "mU/L", decimals: 1 }],
     calculate: homa,
     interpretation: () => "No universal diagnostic cutoff; assay- and population-dependent. HOMA1, not HOMA2. No diagnosis inferred.",
@@ -1391,14 +2847,15 @@ var registry = [
     conversion: "Serum creatinine µmol/L ÷ 88.4 = mg/dL.",
     method: "eGFR = 142 × min(Scr/κ,1)^α × max(Scr/κ,1)^−1.200 × 0.9938^Age × (1.012 if female). Scr in mg/dL; κ=.7 female/.9 male; α=−.241 female/−.302 male. No race coefficient. Whole-number display only, full precision internally.",
     clinicalReview: review,
-    sources: [pubmed2("Inker et al., NEJM 2021", "34554658"), source2("NIDDK GFR equations and limitations", "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/kidney-disease/laboratory-evaluation/glomerular-filtration-rate/estimating")],
-    inputs: [sex, age3, number2("creatinine", "Serum creatinine", "µmol/L", "Positive finite serum creatinine; internally divided by 88.4."), yesno2("stable", "Stable creatinine, without acute kidney injury?", "No blocks creatinine-based estimation."), yesno2("habit", "Extremes of muscle mass or body habitus?", "Yes blocks this tool; creatinine-only estimation may be inappropriate.")],
+    sources: [pubmed3("Inker et al., NEJM 2021", "34554658"), source3("NIDDK GFR equations and limitations", "https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/kidney-disease/laboratory-evaluation/glomerular-filtration-rate/estimating")],
+    inputs: [sex, age3, number3("creatinine", "Serum creatinine", "µmol/L", "Positive finite serum creatinine; internally divided by 88.4."), yesno3("stable", "Stable creatinine, without acute kidney injury?", "No blocks creatinine-based estimation."), yesno3("habit", "Extremes of muscle mass or body habitus?", "Yes blocks this tool; creatinine-only estimation may be inappropriate.")],
     outputs: [{ key: "gfr", label: "eGFR", unit: "mL/min/1.73 m²", decimals: 0 }],
     calculate: egfr,
     interpretation: () => "Estimate, not a precise measurement. Creatinine–cystatin C is more accurate; indexed eGFR is not absolute drug-dosing clearance.",
     vectors: [{ inputs: egfrInputs, expected: { gfr: "75" }, provenance: "Doc §4 independent F55/Scr80" }, { inputs: { ...egfrInputs, sex: "male", age: "60", creatinine: "110" }, expected: { gfr: "66" }, provenance: "Doc §4 independent M60/Scr110" }, { inputs: { ...egfrInputs, age: "70", creatinine: "120" }, expected: { gfr: "42" }, provenance: "Doc §4 independent F70/Scr120" }]
   },
-  ...expansion
+  ...expansion,
+  ...batchA
 ];
 function favourites(value) {
   if (!Array.isArray(value) || !value.every((x) => typeof x === "string")) return [];
@@ -1445,8 +2902,24 @@ function transition(d, s, action) {
   return s;
 }
 
+// src/batch-a-groups.js
+var batchGroups = {
+  ariscat: [["Age and respiratory assessment", ["age", "spo2", "respiratoryInfection", "hb"]], ["Surgery", ["incision", "duration", "emergency"]]],
+  apgar: [["Observation timepoint", ["timepoint"]], ["Newborn assessment", ["appearance", "pulse", "grimace", "activity", "respiration"]]],
+  "ciwa-ar": [["Observed withdrawal symptoms", ["nausea", "tremor", "sweats", "anxiety", "agitation"]], ["Sensory symptoms and orientation", ["tactile", "auditory", "visual", "headache", "orientation"]]],
+  "westley-croup": [["Consciousness and cyanosis", ["consciousness", "cyanosis"]], ["Airway examination", ["stridor", "airEntry", "retractions"]]],
+  aec: [["Laboratory differential", ["wbc", "eosinophils"]]],
+  "ga-from-edd": [["Supplied dates", ["edd", "asOf"]]],
+  "maintenance-fluids": [["Maintenance weight", ["weightKg"]]],
+  "posttest-lr": [["Pre-test probability and evidence", ["pretestProbabilityPct", "likelihoodRatios"]], ["Chained-test applicability", ["independent"]]],
+  "posttest-sens-spec": [["Probability and test characteristics", ["pretestProbabilityPct", "sensitivityPct", "specificityPct"]], ["Observed result", ["result"]]],
+  "urine-acr": [["Same-sample urine concentrations", ["albuminValue", "albuminUnit", "creatinineValue", "creatinineUnit"]], ["Reporting preference", ["outputUnit"]]],
+  "urine-pcr": [["Same-sample urine concentrations", ["proteinValue", "proteinUnit", "creatinineValue", "creatinineUnit"]], ["Reporting preference", ["outputUnit"]]]
+};
+
 // src/ui-groups.js
 var inputGroups = {
+  ...batchGroups,
   framingham: [["Model and age", ["sex", "age"]], ["Measurements", ["tc", "hdl", "sbp"]], ["Risk factors", ["treated", "smoker", "diabetes"]], ["Eligibility checks", ["cvd", "genetic", "bypass"]], ["Canadian reporting input", ["family"]]],
   "homa1-ir": [["Measurements", ["glucose", "insulin"]], ["Eligibility", ["fasting", "exogenous", "population"]]],
   "egfr-2021": [["Model and measurements", ["sex", "age", "creatinine"]], ["Applicability", ["stable", "habit"]]],
@@ -1559,7 +3032,7 @@ function Calculator({ definition: d, ctx, active }) {
               f.type === "choice" ? /* @__PURE__ */ jsxs("select", { id: `cpc-${f.id}`, value: view.draft[f.id], autoComplete: "off", "aria-describedby": `cpc-${f.id}-help${view.errors[f.id] ? ` cpc-${f.id}-error` : ""}`, "aria-invalid": !!view.errors[f.id], onChange: (e) => send({ type: "edit", field: f.id, value: e.target.value }), children: [
                 /* @__PURE__ */ jsx("option", { value: "", children: "Not selected" }),
                 f.options.map((o) => /* @__PURE__ */ jsx("option", { value: o.value, children: o.label }, o.value))
-              ] }) : /* @__PURE__ */ jsx(Input, { id: `cpc-${f.id}`, type: "text", inputMode: "decimal", autoComplete: "off", spellCheck: false, value: view.draft[f.id], "aria-invalid": !!view.errors[f.id], "aria-describedby": `cpc-${f.id}-help${view.errors[f.id] ? ` cpc-${f.id}-error` : ""}`, onChange: (e) => send({ type: "edit", field: f.id, value: e.target.value }) }),
+              ] }) : /* @__PURE__ */ jsx(Input, { id: `cpc-${f.id}`, type: f.type === "date" ? "date" : "text", inputMode: f.type === "number" ? "decimal" : "text", autoComplete: "off", spellCheck: false, value: view.draft[f.id], "aria-invalid": !!view.errors[f.id], "aria-describedby": `cpc-${f.id}-help${view.errors[f.id] ? ` cpc-${f.id}-error` : ""}`, onChange: (e) => send({ type: "edit", field: f.id, value: e.target.value }) }),
               f.type === "choice" && view.draft[f.id] && /* @__PURE__ */ jsx("p", { id: `cpc-${f.id}-selected`, className: `cpc-selected-choice${f.options.find((o) => o.value === view.draft[f.id]).label.length <= 30 ? " cpc-short-choice" : ""}`, "aria-hidden": "true", children: f.options.find((o) => o.value === view.draft[f.id]).label }),
               /* @__PURE__ */ jsx("p", { id: `cpc-${f.id}-help`, className: "cpc-help", children: f.help }),
               view.errors[f.id] && /* @__PURE__ */ jsx("p", { id: `cpc-${f.id}-error`, className: "cpc-error", children: view.errors[f.id] })
@@ -1667,7 +3140,7 @@ function Library({ ctx, catalog = registry }) {
     setFilters({ query: "", category: "all", onlyFavourites: false, az: false, letter: "all" });
     setLimit(BATCH_SIZE);
   }
-  function select2(d) {
+  function select3(d) {
     setLibraryOpen(false);
     if (active.current === d.id) {
       document.getElementById("cpc-selected-title")?.focus();
@@ -1735,7 +3208,7 @@ function Library({ ctx, catalog = registry }) {
           /* @__PURE__ */ jsx("div", { className: "cpc-catalog-rows", children: groups.map((group) => /* @__PURE__ */ jsxs("section", { "aria-label": group ?? "Alphabetical calculators", children: [
             group && /* @__PURE__ */ jsx("h2", { children: group }),
             /* @__PURE__ */ jsx("div", { className: "cpc-entries", children: shown.filter((d) => !group || d.category === group).map((d) => /* @__PURE__ */ jsxs("div", { className: "cpc-row", children: [
-              /* @__PURE__ */ jsxs(Button, { type: "button", variant: "outline", "data-testid": `select-${d.id}`, "aria-current": selected?.id === d.id ? "true" : void 0, onClick: () => select2(d), children: [
+              /* @__PURE__ */ jsxs(Button, { type: "button", variant: "outline", "data-testid": `select-${d.id}`, "aria-current": selected?.id === d.id ? "true" : void 0, onClick: () => select3(d), children: [
                 /* @__PURE__ */ jsx("span", { className: "cpc-name", children: d.name }),
                 selected?.id === d.id ? " — Selected" : "",
                 /* @__PURE__ */ jsx("small", { children: d.version })

@@ -24,7 +24,7 @@ test('active wide discovery is independently bounded beside a compact output-fir
 
 test('discovery composes category alias favourites letter and A-Z without remounting work',async({page})=>{
  await page.setViewportSize({width:1200,height:900});await page.goto('/');
- await expect(page.locator('#cpc-count')).toHaveText('Showing 15 of 15 calculators');
+ await expect(page.locator('#cpc-count')).toHaveText('Showing 24 of 26 calculators');
  await page.getByLabel('Filter by clinical category').selectOption('Renal');
  await page.getByLabel('Search calculators',{exact:true}).fill('CrCl');
  await expect(page.locator('.cpc-row')).toHaveCount(1);await choose(page,'cockcroft-gault');

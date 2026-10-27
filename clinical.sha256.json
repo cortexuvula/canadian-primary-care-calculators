@@ -1,7 +1,11 @@
 {
+  "src/batch-a-engine.js": "0875a35d7b26872fbd4ef0188fe93fbe7cca3cb694abdc791391684914d954d6",
+  "src/batch-a-groups.js": "e24fd7668ec13bfa5a7bc340d02de478cfc76f709142aa21def3b06b863d554c",
+  "src/batch-a-registry.js": "b8536b662d6392098a33e6993b2243934816dc0812de0ef86d15518908b5715e",
+  "src/batch-a-vectors.js": "a8eebcf527360ae48325c2d103181f35e9495d93be99a692442cac21ddf2abbb",
   "src/engine.js": "83a58839f1ee0ec6866c7ae68e86a71788b01d36aa1aa43a1f662e424daf2c03",
   "src/expansion-registry.js": "29d2f709771355537ab027951a60d61c46b96984e22c956fd16940921244f5d5",
   "src/expansion-vectors.js": "8f86891cb1aa8e6268e4a6acd910d0b5a6695f4382fd1dd732a79fe71ca4f02a",
-  "src/registry.js": "4ecdf36de8713f821038633d4971faa7ea9995f5d51bc0505fdbfd74ad5e54f4",
+  "src/registry.js": "5c5139303d01f57c90ccc55881143f4caf970e802d63a759f27ee8a923e541d2",
   "src/state.js": "1b571bae46c15f5635e67ace81e420b9da1dbfc51cd2e014534d928ea984d16e"
 }

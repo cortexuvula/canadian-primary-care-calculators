@@ -24,7 +24,7 @@ test('compiled library and scale screenshots plus 12 narrow wide and text-size d
  for(const theme of ['light','dark'])for(const width of [320,640,1200])for(const scale of [1,2]){
  await page.setViewportSize({width,height:1000});await page.goto('/');await expect(page.locator('#cpc-search')).toBeVisible();
  await page.evaluate(({theme,scale})=>{document.documentElement.dataset.hermesMode=theme;document.documentElement.style.fontSize=16*scale+'px';},{theme,scale});
- await expect(page.locator('.cpc-row')).toHaveCount(15);
+ await expect(page.locator('.cpc-row')).toHaveCount(24);
  const g=await page.locator('.cpc').evaluate(e=>({width:e.clientWidth,scroll:e.scrollWidth,document:document.documentElement.scrollWidth,rows:[...e.querySelectorAll('.cpc-row')].map(r=>({height:r.getBoundingClientRect().height,x:r.getBoundingClientRect().x})),targets:[...e.querySelectorAll('input,select,button')].filter(e=>e.getClientRects().length).map(e=>({height:e.getBoundingClientRect().height,width:e.getBoundingClientRect().width})),columns:getComputedStyle(e.querySelector('.cpc-entries')).gridTemplateColumns}));
  expect(g.scroll).toBeLessThanOrEqual(g.width+1);expect(g.document).toBe(width);expect(g.targets.every(r=>r.height>=44&&r.width>=44)).toBe(true);
  expect(g.columns.split(' ').length).toBe(width===1200&&scale===1?2:1);
