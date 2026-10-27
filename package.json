@@ -9,8 +9,8 @@
     "test:browser": "playwright test",
     "test:mutations": "node scripts/mutations.js",
     "inventory": "node scripts/inventory.js",
-    "sdk:fetch": "node scripts/fetch-sdk.js",
-    "test:browser:sdk": "npm run sdk:fetch && CPC_SDK_FIXTURE=1 playwright test",
+    "sdk:verify": "node scripts/verify-sdk.js",
+    "test:browser:sdk": "npm run sdk:verify && CPC_SDK_FIXTURE=1 playwright test",
     "release": "python3 scripts/release.py"
   },
   "devDependencies": {

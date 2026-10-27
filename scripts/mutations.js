@@ -54,6 +54,8 @@ const details=[];
 for(const [name,file,from,to]of mutations){
  const dir=`${base}/${name}`;await rm(dir,{recursive:true,force:true});await mkdir(dir,{recursive:true});
  await cp('src',`${dir}/src`,{recursive:true});await cp('tests',`${dir}/tests`,{recursive:true});await writeFile(`${dir}/package.json`,'{"type":"module"}');
+ // The additive offline-fixture regressions also run here and need their CLI dependency.
+ await mkdir(`${dir}/scripts`);await cp('scripts/verify-sdk.js',`${dir}/scripts/verify-sdk.js`);
  const original=await readFile(`${dir}/${file}`,'utf8');if(original.split(from).length!==2)throw Error('Mutation target not unique: '+name);
  await writeFile(`${dir}/${file}`,original.replace(from,to));
  const run=spawnSync(process.execPath,['--test','--test-reporter=spec',...tests],{cwd:dir,encoding:'utf8'});

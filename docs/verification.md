@@ -12,6 +12,7 @@ npm test
 npm run build
 npx playwright install chromium
 npm run test:browser
+npm run sdk:verify # first provision the fixture: sdk-fixture.md
 npm run test:browser:sdk
 npm run test:mutations
 hermes plugins validate . --install-deps
@@ -20,7 +21,7 @@ hermes plugins validate . --install-deps
 - Unit tests cover the engine, Canadian conversions, score branches, independent vectors, registries, state/privacy and catalog navigation.
 - Build verifies runtime imports against the public SDK/React allowlist, checks `runtime.sha256`, and writes identical root and desktop copies. Source paths are preserved so esbuild emits the reviewed bytes independent of checkout location.
 - Browser tests load **compiled plugin.js**, real React and a boundary adapter for SDK registration, storage, navigation and clipboard; they exercise 15 calculators, stale-result/error/focus/copy behaviour, both appearances and responsive layouts. Scale fixtures of 50/150/300 entries are fictional and are never registered in the production plugin.
-- `test:browser:sdk` additionally replaces Button/Input adapters with checksum-pinned upstream v0.21.6 controls. Network access is used only to fetch the test fixture; runtime calculations remain offline and tests assert the runtime's no-transmission behaviour.
+- `test:browser:sdk` additionally replaces Button/Input adapters with checksum-pinned upstream v0.21.6 controls. The suite and its harness only verify/use preprovisioned files and fail closed on missing or incorrect bytes. Acquisition is an explicit [separate setup step](sdk-fixture.md), not automatic JS tooling; runtime calculations remain offline and tests assert the runtime's no-transmission behaviour.
 - Mutation tests require assertion failures for 44 deliberate numerical/guard/state defects in ignored isolated copies. Infrastructure failures do not count as detected mutations.
 - Admission validation applies the stock security scanner, desktop-surface and no-core-override gates. A no-`__init__.py` capability-probe warning is expected for this desktop-only package; no fake backend is added to silence it. Static admission is not a live desktop load.
 

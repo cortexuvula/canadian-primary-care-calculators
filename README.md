@@ -58,12 +58,13 @@ npm test
 npm run build
 npx playwright install chromium
 npm run test:browser
+npm run sdk:verify # first provision the fixture: docs/sdk-fixture.md
 npm run test:browser:sdk
 npm run test:mutations
 hermes plugins validate . --install-deps
 ```
 
-The SDK run downloads checksum-pinned **public** Hermes source into an ignored test fixture; it needs no private checkout or credentials. Runtime imports stay external and are supplied by Desktop. [Verification](docs/verification.md), [compatibility](docs/compatibility.md), and [release reproduction](docs/releasing.md) describe boundaries and exact commands. CI runs the same checks from a public checkout. Remote CI status must be checked at the exact published commit; local results are not a claim that GitHub CI has already run.
+The SDK run only verifies and uses a preprovisioned checksum-pinned **public** Hermes test fixture; it never downloads or repairs files. Follow the explicit [fixture provisioning instructions](docs/sdk-fixture.md) before the SDK suite. CI acquires those files in a separate, visible setup step; no private checkout or credentials are needed. Runtime imports stay external and are supplied by Desktop. [Verification](docs/verification.md), [compatibility](docs/compatibility.md), and [release reproduction](docs/releasing.md) describe boundaries and exact commands. CI runs the same checks from a public checkout. Remote CI status must be checked at the exact published commit; local results are not a claim that GitHub CI has already run.
 
 ## Sources and licence
 
