@@ -53,15 +53,15 @@ jobs:
       - run: npm run test:mutations
       - name: Reproduce the distributable twice outside source
         run: |
-          python3 scripts/release.py ../release-assets
-          python3 scripts/release.py ../release-assets-repeat
-          cmp ../release-assets/canadian-primary-care-0.3.0.zip ../release-assets-repeat/canadian-primary-care-0.3.0.zip
-          cmp ../release-assets/SHA256SUMS ../release-assets-repeat/SHA256SUMS
-          (cd ../release-assets && sha256sum -c SHA256SUMS)
+          python3 scripts/release.py "${{ runner.temp }}/canadian-primary-care-release"
+          python3 scripts/release.py "${{ runner.temp }}/canadian-primary-care-release-repeat"
+          cmp "${{ runner.temp }}/canadian-primary-care-release/canadian-primary-care-0.3.0.zip" "${{ runner.temp }}/canadian-primary-care-release-repeat/canadian-primary-care-0.3.0.zip"
+          cmp "${{ runner.temp }}/canadian-primary-care-release/SHA256SUMS" "${{ runner.temp }}/canadian-primary-care-release-repeat/SHA256SUMS"
+          (cd "${{ runner.temp }}/canadian-primary-care-release" && sha256sum -c SHA256SUMS)
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: canadian-primary-care-0.3.0-preview
-          path: ../release-assets/
+          path: ${{ runner.temp }}/canadian-primary-care-release/
           if-no-files-found: error
   stock-hermes-admission:
     runs-on: ubuntu-24.04
