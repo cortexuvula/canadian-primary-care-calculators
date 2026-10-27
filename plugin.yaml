@@ -1,0 +1,17 @@
+manifest_version: 2
+name: canadian-primary-care
+version: "0.3.0"
+description: Offline Canadian-unit clinician decision-support calculators for Hermes Desktop (preview).
+author: Andre Hugo
+license: MIT
+homepage: https://github.com/cortexuvula/canadian-primary-care-calculators
+kind: standalone
+requires_hermes: ">=0.21.6"
+requires_env: []
+provides_tools: []
+provides_hooks: []
+capabilities:
+  provides_tools: []
+  provides_hooks: []
+  provides_middleware: []
+  requires_env: []

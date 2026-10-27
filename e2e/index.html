@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Compiled plugin test harness</title><link rel="icon" href="data:,"><style>
+:root{--ui-text-primary:#1d1d1f;--ui-text-secondary:#515158;--ui-stroke-secondary:#767680;--ui-accent:#165ec4;--ui-bg-quaternary:#ececef;color:var(--ui-text-primary);background:#fff;font-family:system-ui,sans-serif}body{margin:0}button,input,select{font:inherit}body.dark{--ui-text-primary:#f5f5f7;--ui-text-secondary:#c7c7cc;--ui-stroke-secondary:#91919b;--ui-accent:#8cbaff;--ui-bg-quaternary:#303035;background:#1e1e1e}#root{width:100%;min-width:0}
+</style><script type="importmap">{"imports":{"react":"/.browser/runtime.js","react/jsx-runtime":"/.browser/runtime.js","@hermes/plugin-sdk":"/e2e/sdk.js"}}</script></head><body><div id="root"></div><script type="module">
+import {createRoot} from '/.browser/runtime.js';
+import plugin from '/plugin.js';
+window.probe={contributions:[],storage:[],clipboard:[],navigation:[],osOutcome:true,holdCopy:false,preference:null,storageFails:false};
+const root=createRoot(document.querySelector('#root'));
+const ctx={register:c=>{window.probe.contributions.push(c);return ()=>{}},storage:{get:(k,f)=>window.probe.preference??f,set:(key,value)=>{if(window.probe.storageFails)throw Error('synthetic preference failure');window.probe.storage.push({key,value});window.probe.preference=value;}},os:{writeClipboard:async(text)=>{window.probe.clipboard.push(text);if(window.probe.holdCopy)await new Promise(resolve=>window.probe.releaseCopy=resolve);if(window.probe.osOutcome==='throw')throw Error('synthetic clipboard failure');return window.probe.osOutcome;}}};
+plugin.register(ctx);
+window.probe.mount=()=>root.render(window.probe.contributions.find(c=>c.render).render());
+window.probe.unmount=()=>root.render(null);
+window.probe.mountScale=async (size,includeReal=false)=>{const {scaleView}=await import('/.browser/scale.js');root.render(scaleView(ctx,size,includeReal));};
+window.probe.mount();
+</script></body></html>

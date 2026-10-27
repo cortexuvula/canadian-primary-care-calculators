@@ -1,0 +1,15 @@
+{
+  "repository": "https://github.com/NousResearch/hermes-agent",
+  "sha": "818c13be1dc4fd28987e1e881a9408224afd4535",
+  "release": "v0.21.6",
+  "files": {
+    "apps/desktop/src/components/ui/button.tsx": "fec0302b7d1b67fec555838f45943607ef1ee0ba2e854caef236731b618c124e",
+    "apps/desktop/src/components/ui/input.tsx": "59a7fdf36e22f7818f82d231c50e35e15cc56b50b1f18ea3b61a23a7315c7cfd",
+    "apps/desktop/src/components/ui/control.ts": "5f24bdd445afc9acb7492647ce661ff1dde11313ab65ec3f1340cb32de225c61",
+    "apps/desktop/src/lib/icons.ts": "b70ce83c1b763f8da1f4e87f564483198d593f496c2d3107ed9c89b0bffd8281",
+    "apps/desktop/src/lib/utils.ts": "746e4d9beb1a5b6f0e047ec19d5f1c542c9f8117f4ea7c80d7b9bd0fe2128e91",
+    "LICENSE": "821556e6336796450ab852d375117b48a4887e71d255794fd6318d99982a5ab6",
+    "apps/desktop/src/contrib/plugin.ts": "dfdd28559b7b65a2ec53614dc7bb40e2d7547c094e468e32b828f74db6903c6d",
+    "apps/desktop/src/sdk/index.ts": "201dbd7d844b7800a2c3a58da468bfdf83fd07fb64f005a025553f70e6f62db6"
+  }
+}

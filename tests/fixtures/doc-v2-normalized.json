@@ -1,0 +1,1604 @@
+{
+  "valid": [
+    {
+      "calculator": "bmi",
+      "id": "V1",
+      "label": "normal male",
+      "inputs": {
+        "weight": "70",
+        "height": "175",
+        "age": "40",
+        "pregnantOrLactating": "no"
+      },
+      "expected": {
+        "bmi": 22.857142857142858
+      },
+      "display": {
+        "bmi": "22.9"
+      },
+      "provenance": "Doc independent Python JSON bmi.V1"
+    },
+    {
+      "calculator": "bmi",
+      "id": "V2",
+      "label": "obese class I",
+      "inputs": {
+        "weight": "95",
+        "height": "170",
+        "age": "40",
+        "pregnantOrLactating": "no"
+      },
+      "expected": {
+        "bmi": 32.871972318339104
+      },
+      "display": {
+        "bmi": "32.9"
+      },
+      "provenance": "Doc independent Python JSON bmi.V2"
+    },
+    {
+      "calculator": "bmi",
+      "id": "V3",
+      "label": "underweight",
+      "inputs": {
+        "weight": "50",
+        "height": "170",
+        "age": "40",
+        "pregnantOrLactating": "no"
+      },
+      "expected": {
+        "bmi": 17.301038062283737
+      },
+      "display": {
+        "bmi": "17.3"
+      },
+      "provenance": "Doc independent Python JSON bmi.V3"
+    },
+    {
+      "calculator": "bmi",
+      "id": "V4",
+      "label": "boundary 25.0 -> overweight",
+      "inputs": {
+        "weight": "81",
+        "height": "180",
+        "age": "40",
+        "pregnantOrLactating": "no"
+      },
+      "expected": {
+        "bmi": 25
+      },
+      "display": {
+        "bmi": "25.0"
+      },
+      "provenance": "Doc independent Python JSON bmi.V4"
+    },
+    {
+      "calculator": "bmi",
+      "id": "V5",
+      "label": "boundary 30.0 -> obese I",
+      "inputs": {
+        "weight": "97.2",
+        "height": "180",
+        "age": "40",
+        "pregnantOrLactating": "no"
+      },
+      "expected": {
+        "bmi": 30
+      },
+      "display": {
+        "bmi": "30.0"
+      },
+      "provenance": "Doc independent Python JSON bmi.V5"
+    },
+    {
+      "calculator": "bmi",
+      "id": "V6",
+      "label": "normal female",
+      "inputs": {
+        "weight": "60",
+        "height": "165",
+        "age": "40",
+        "pregnantOrLactating": "no"
+      },
+      "expected": {
+        "bmi": 22.03856749311295
+      },
+      "display": {
+        "bmi": "22.0"
+      },
+      "provenance": "Doc independent Python JSON bmi.V6"
+    },
+    {
+      "calculator": "bmi",
+      "id": "V7",
+      "label": "pregnant/lactating (numeric only, no class)",
+      "inputs": {
+        "weight": "70",
+        "height": "175",
+        "pregnantOrLactating": "yes",
+        "age": "40"
+      },
+      "expected": {
+        "bmi": 22.857142857142858
+      },
+      "display": {
+        "bmi": "22.9"
+      },
+      "provenance": "Doc independent Python JSON bmi.V7"
+    },
+    {
+      "calculator": "bsa-mosteller",
+      "id": "V1",
+      "label": "170/70",
+      "inputs": {
+        "height": "170",
+        "weight": "70"
+      },
+      "expected": {
+        "bsa": 1.818118685772619
+      },
+      "display": {
+        "bsa": "1.82"
+      },
+      "provenance": "Doc independent Python JSON bsa.V1"
+    },
+    {
+      "calculator": "bsa-mosteller",
+      "id": "V2",
+      "label": "180/80",
+      "inputs": {
+        "height": "180",
+        "weight": "80"
+      },
+      "expected": {
+        "bsa": 2
+      },
+      "display": {
+        "bsa": "2.00"
+      },
+      "provenance": "Doc independent Python JSON bsa.V2"
+    },
+    {
+      "calculator": "bsa-mosteller",
+      "id": "V3",
+      "label": "160/50",
+      "inputs": {
+        "height": "160",
+        "weight": "50"
+      },
+      "expected": {
+        "bsa": 1.4907119849998598
+      },
+      "display": {
+        "bsa": "1.49"
+      },
+      "provenance": "Doc independent Python JSON bsa.V3"
+    },
+    {
+      "calculator": "cockcroft-gault",
+      "id": "V1",
+      "label": "normal male",
+      "inputs": {
+        "age": "40",
+        "weight": "70",
+        "creatinine": "90",
+        "sex": "male"
+      },
+      "expected": {
+        "crcl": 95.49382716049382
+      },
+      "display": {
+        "crcl": "95"
+      },
+      "provenance": "Doc independent Python JSON cockcroftGault.V1"
+    },
+    {
+      "calculator": "cockcroft-gault",
+      "id": "V2",
+      "label": "normal female",
+      "inputs": {
+        "age": "40",
+        "weight": "60",
+        "creatinine": "80",
+        "sex": "female"
+      },
+      "expected": {
+        "crcl": 78.27083333333333
+      },
+      "display": {
+        "crcl": "78"
+      },
+      "provenance": "Doc independent Python JSON cockcroftGault.V2"
+    },
+    {
+      "calculator": "cockcroft-gault",
+      "id": "V3",
+      "label": "elderly male (65)",
+      "inputs": {
+        "age": "65",
+        "weight": "80",
+        "creatinine": "110",
+        "sex": "male"
+      },
+      "expected": {
+        "crcl": 66.96969696969697
+      },
+      "display": {
+        "crcl": "67"
+      },
+      "provenance": "Doc independent Python JSON cockcroftGault.V3"
+    },
+    {
+      "calculator": "cockcroft-gault",
+      "id": "V4",
+      "label": "elderly female (72)",
+      "inputs": {
+        "age": "72",
+        "weight": "65",
+        "creatinine": "120",
+        "sex": "female"
+      },
+      "expected": {
+        "crcl": 38.439675925925926
+      },
+      "display": {
+        "crcl": "38"
+      },
+      "provenance": "Doc independent Python JSON cockcroftGault.V4"
+    },
+    {
+      "calculator": "cockcroft-gault",
+      "id": "V5a",
+      "label": "female-correction pair: male arm",
+      "inputs": {
+        "age": "50",
+        "weight": "70",
+        "creatinine": "90",
+        "sex": "male"
+      },
+      "expected": {
+        "crcl": 85.94444444444444
+      },
+      "display": {
+        "crcl": "86"
+      },
+      "provenance": "Doc independent Python JSON cockcroftGault.V5a"
+    },
+    {
+      "calculator": "cockcroft-gault",
+      "id": "V5b",
+      "label": "female-correction pair: female arm (x0.85)",
+      "inputs": {
+        "age": "50",
+        "weight": "70",
+        "creatinine": "90",
+        "sex": "female"
+      },
+      "expected": {
+        "crcl": 73.05277777777778
+      },
+      "display": {
+        "crcl": "73"
+      },
+      "provenance": "Doc independent Python JSON cockcroftGault.V5b"
+    },
+    {
+      "calculator": "cockcroft-gault",
+      "id": "V6",
+      "label": "age 18 lower boundary (male)",
+      "inputs": {
+        "age": "18",
+        "weight": "70",
+        "creatinine": "90",
+        "sex": "male"
+      },
+      "expected": {
+        "crcl": 116.50246913580247
+      },
+      "display": {
+        "crcl": "117"
+      },
+      "provenance": "Doc independent Python JSON cockcroftGault.V6"
+    },
+    {
+      "calculator": "cockcroft-gault",
+      "id": "V7",
+      "label": "age 92 upper boundary (male)",
+      "inputs": {
+        "age": "92",
+        "weight": "70",
+        "creatinine": "90",
+        "sex": "male"
+      },
+      "expected": {
+        "crcl": 45.837037037037035
+      },
+      "display": {
+        "crcl": "46"
+      },
+      "provenance": "Doc independent Python JSON cockcroftGault.V7"
+    },
+    {
+      "calculator": "fib4",
+      "id": "V1",
+      "label": "50/30/40/220",
+      "inputs": {
+        "age": "50",
+        "ast": "30",
+        "alt": "40",
+        "platelets": "220"
+      },
+      "expected": {
+        "fib4": 1.0780492023301294
+      },
+      "display": {
+        "fib4": "1.08"
+      },
+      "provenance": "Doc independent Python JSON fib4.V1"
+    },
+    {
+      "calculator": "fib4",
+      "id": "V2",
+      "label": "60/80/90/140",
+      "inputs": {
+        "age": "60",
+        "ast": "80",
+        "alt": "90",
+        "platelets": "140"
+      },
+      "expected": {
+        "fib4": 3.6140316116210047
+      },
+      "display": {
+        "fib4": "3.61"
+      },
+      "provenance": "Doc independent Python JSON fib4.V2"
+    },
+    {
+      "calculator": "fib4",
+      "id": "V3",
+      "label": "45/45/35/150",
+      "inputs": {
+        "age": "45",
+        "ast": "45",
+        "alt": "35",
+        "platelets": "150"
+      },
+      "expected": {
+        "fib4": 2.2819164877669946
+      },
+      "display": {
+        "fib4": "2.28"
+      },
+      "provenance": "Doc independent Python JSON fib4.V3"
+    },
+    {
+      "calculator": "fib4",
+      "id": "V4",
+      "label": "70/35/30/200 age>=65",
+      "inputs": {
+        "age": "70",
+        "ast": "35",
+        "alt": "30",
+        "platelets": "200"
+      },
+      "expected": {
+        "fib4": 2.236533776479428
+      },
+      "display": {
+        "fib4": "2.24"
+      },
+      "provenance": "Doc independent Python JSON fib4.V4"
+    },
+    {
+      "calculator": "fib4",
+      "id": "V5",
+      "label": "30/35/30/200 age<35 (warning zone)",
+      "inputs": {
+        "age": "30",
+        "ast": "35",
+        "alt": "30",
+        "platelets": "200"
+      },
+      "expected": {
+        "fib4": 0.9585144756340407
+      },
+      "display": {
+        "fib4": "0.96"
+      },
+      "provenance": "Doc independent Python JSON fib4.V5"
+    },
+    {
+      "calculator": "apri",
+      "id": "V1",
+      "label": "30/40/220",
+      "inputs": {
+        "ast": "30",
+        "uln": "40",
+        "platelets": "220",
+        "acute": "no"
+      },
+      "expected": {
+        "apri": 0.3409090909090909
+      },
+      "display": {
+        "apri": "0.34"
+      },
+      "provenance": "Doc independent Python JSON apri.V1"
+    },
+    {
+      "calculator": "apri",
+      "id": "V2",
+      "label": "110/40/110",
+      "inputs": {
+        "ast": "110",
+        "uln": "40",
+        "platelets": "110",
+        "acute": "no"
+      },
+      "expected": {
+        "apri": 2.5
+      },
+      "display": {
+        "apri": "2.50"
+      },
+      "provenance": "Doc independent Python JSON apri.V2"
+    },
+    {
+      "calculator": "apri",
+      "id": "V3",
+      "label": "boundary 0.5",
+      "inputs": {
+        "ast": "44",
+        "uln": "40",
+        "platelets": "220",
+        "acute": "no"
+      },
+      "expected": {
+        "apri": 0.5
+      },
+      "display": {
+        "apri": "0.50"
+      },
+      "provenance": "Doc independent Python JSON apri.V3"
+    },
+    {
+      "calculator": "apri",
+      "id": "V4",
+      "label": "boundary 1.5",
+      "inputs": {
+        "ast": "132",
+        "uln": "40",
+        "platelets": "220",
+        "acute": "no"
+      },
+      "expected": {
+        "apri": 1.5
+      },
+      "display": {
+        "apri": "1.50"
+      },
+      "provenance": "Doc independent Python JSON apri.V4"
+    },
+    {
+      "calculator": "apri",
+      "id": "V5",
+      "label": "boundary 2.0",
+      "inputs": {
+        "ast": "88",
+        "uln": "40",
+        "platelets": "110",
+        "acute": "no"
+      },
+      "expected": {
+        "apri": 2
+      },
+      "display": {
+        "apri": "2.00"
+      },
+      "provenance": "Doc independent Python JSON apri.V5"
+    },
+    {
+      "calculator": "anion-gap",
+      "id": "V1",
+      "label": "no K",
+      "inputs": {
+        "sodium": "140",
+        "chloride": "105",
+        "bicarbonate": "24",
+        "convention": "exclude",
+        "potassium": "",
+        "albumin": "",
+        "reference": ""
+      },
+      "expected": {
+        "gap": 11
+      },
+      "display": {
+        "gap": "11.0"
+      },
+      "provenance": "Doc independent Python JSON anionGap.V1"
+    },
+    {
+      "calculator": "anion-gap",
+      "id": "V2",
+      "label": "with K",
+      "inputs": {
+        "sodium": "138",
+        "potassium": "4.5",
+        "chloride": "100",
+        "bicarbonate": "12",
+        "convention": "include",
+        "albumin": "",
+        "reference": ""
+      },
+      "expected": {
+        "gap": 30.5
+      },
+      "display": {
+        "gap": "30.5"
+      },
+      "provenance": "Doc independent Python JSON anionGap.V2"
+    },
+    {
+      "calculator": "anion-gap",
+      "id": "V3-ref44",
+      "label": "hypoalbuminaemia (alb 25 g/L)",
+      "inputs": {
+        "sodium": "140",
+        "chloride": "110",
+        "bicarbonate": "22",
+        "albumin": "25",
+        "convention": "exclude",
+        "potassium": "",
+        "reference": "44"
+      },
+      "expected": {
+        "gap": 8,
+        "corrected": 12.75
+      },
+      "display": {
+        "gap": "8.0",
+        "corrected": "12.8"
+      },
+      "provenance": "Doc independent Python JSON anionGap.V3-ref44"
+    },
+    {
+      "calculator": "anion-gap",
+      "id": "V3-ref40",
+      "label": "hypoalbuminaemia (alb 25 g/L)",
+      "inputs": {
+        "sodium": "140",
+        "chloride": "110",
+        "bicarbonate": "22",
+        "albumin": "25",
+        "convention": "exclude",
+        "potassium": "",
+        "reference": "40"
+      },
+      "expected": {
+        "gap": 8,
+        "corrected": 11.75
+      },
+      "display": {
+        "gap": "8.0",
+        "corrected": "11.8"
+      },
+      "provenance": "Doc independent Python JSON anionGap.V3-ref40"
+    },
+    {
+      "calculator": "corrected-sodium",
+      "id": "V1-katz",
+      "label": "Na128 glu30",
+      "inputs": {
+        "sodium": "128",
+        "glucose": "30",
+        "formula": "katz"
+      },
+      "expected": {
+        "sodium": 135.04767999999999
+      },
+      "display": {
+        "sodium": "135.0"
+      },
+      "provenance": "Doc independent Python JSON correctedSodium.V1-katz"
+    },
+    {
+      "calculator": "corrected-sodium",
+      "id": "V1-hillier",
+      "label": "Na128 glu30",
+      "inputs": {
+        "sodium": "128",
+        "glucose": "30",
+        "formula": "hillier"
+      },
+      "expected": {
+        "sodium": 138.57152
+      },
+      "display": {
+        "sodium": "138.6"
+      },
+      "provenance": "Doc independent Python JSON correctedSodium.V1-hillier"
+    },
+    {
+      "calculator": "corrected-sodium",
+      "id": "V2-katz",
+      "label": "Na135 glu8",
+      "inputs": {
+        "sodium": "135",
+        "glucose": "8",
+        "formula": "katz"
+      },
+      "expected": {
+        "sodium": 135.706048
+      },
+      "display": {
+        "sodium": "135.7"
+      },
+      "provenance": "Doc independent Python JSON correctedSodium.V2-katz"
+    },
+    {
+      "calculator": "corrected-sodium",
+      "id": "V2-hillier",
+      "label": "Na135 glu8",
+      "inputs": {
+        "sodium": "135",
+        "glucose": "8",
+        "formula": "hillier"
+      },
+      "expected": {
+        "sodium": 136.059072
+      },
+      "display": {
+        "sodium": "136.1"
+      },
+      "provenance": "Doc independent Python JSON correctedSodium.V2-hillier"
+    },
+    {
+      "calculator": "corrected-sodium",
+      "id": "V3-katz",
+      "label": "Na140 glu45",
+      "inputs": {
+        "sodium": "140",
+        "glucose": "45",
+        "formula": "katz"
+      },
+      "expected": {
+        "sodium": 151.37152
+      },
+      "display": {
+        "sodium": "151.4"
+      },
+      "provenance": "Doc independent Python JSON correctedSodium.V3-katz"
+    },
+    {
+      "calculator": "corrected-sodium",
+      "id": "V3-hillier",
+      "label": "Na140 glu45",
+      "inputs": {
+        "sodium": "140",
+        "glucose": "45",
+        "formula": "hillier"
+      },
+      "expected": {
+        "sodium": 157.05728
+      },
+      "display": {
+        "sodium": "157.1"
+      },
+      "provenance": "Doc independent Python JSON correctedSodium.V3-hillier"
+    },
+    {
+      "calculator": "qtc",
+      "id": "V1-bazett",
+      "label": "QT400 HR60",
+      "inputs": {
+        "qt": "400",
+        "hr": "60",
+        "formula": "bazett"
+      },
+      "expected": {
+        "qtc": 400
+      },
+      "display": {
+        "qtc": "400"
+      },
+      "provenance": "Doc independent Python JSON qtc.V1-bazett"
+    },
+    {
+      "calculator": "qtc",
+      "id": "V1-fridericia",
+      "label": "QT400 HR60",
+      "inputs": {
+        "qt": "400",
+        "hr": "60",
+        "formula": "fridericia"
+      },
+      "expected": {
+        "qtc": 400
+      },
+      "display": {
+        "qtc": "400"
+      },
+      "provenance": "Doc independent Python JSON qtc.V1-fridericia"
+    },
+    {
+      "calculator": "qtc",
+      "id": "V1-framingham",
+      "label": "QT400 HR60",
+      "inputs": {
+        "qt": "400",
+        "hr": "60",
+        "formula": "framingham"
+      },
+      "expected": {
+        "qtc": 400
+      },
+      "display": {
+        "qtc": "400"
+      },
+      "provenance": "Doc independent Python JSON qtc.V1-framingham"
+    },
+    {
+      "calculator": "qtc",
+      "id": "V1-hodges",
+      "label": "QT400 HR60",
+      "inputs": {
+        "qt": "400",
+        "hr": "60",
+        "formula": "hodges"
+      },
+      "expected": {
+        "qtc": 400
+      },
+      "display": {
+        "qtc": "400"
+      },
+      "provenance": "Doc independent Python JSON qtc.V1-hodges"
+    },
+    {
+      "calculator": "qtc",
+      "id": "V2-bazett",
+      "label": "QT360 HR100",
+      "inputs": {
+        "qt": "360",
+        "hr": "100",
+        "formula": "bazett"
+      },
+      "expected": {
+        "qtc": 464.75800154489
+      },
+      "display": {
+        "qtc": "465"
+      },
+      "provenance": "Doc independent Python JSON qtc.V2-bazett"
+    },
+    {
+      "calculator": "qtc",
+      "id": "V2-fridericia",
+      "label": "QT360 HR100",
+      "inputs": {
+        "qt": "360",
+        "hr": "100",
+        "formula": "fridericia"
+      },
+      "expected": {
+        "qtc": 426.8271965388075
+      },
+      "display": {
+        "qtc": "427"
+      },
+      "provenance": "Doc independent Python JSON qtc.V2-fridericia"
+    },
+    {
+      "calculator": "qtc",
+      "id": "V2-framingham",
+      "label": "QT360 HR100",
+      "inputs": {
+        "qt": "360",
+        "hr": "100",
+        "formula": "framingham"
+      },
+      "expected": {
+        "qtc": 421.59999999999997
+      },
+      "display": {
+        "qtc": "422"
+      },
+      "provenance": "Doc independent Python JSON qtc.V2-framingham"
+    },
+    {
+      "calculator": "qtc",
+      "id": "V2-hodges",
+      "label": "QT360 HR100",
+      "inputs": {
+        "qt": "360",
+        "hr": "100",
+        "formula": "hodges"
+      },
+      "expected": {
+        "qtc": 430
+      },
+      "display": {
+        "qtc": "430"
+      },
+      "provenance": "Doc independent Python JSON qtc.V2-hodges"
+    },
+    {
+      "calculator": "qtc",
+      "id": "V3-bazett",
+      "label": "QT480 HR50",
+      "inputs": {
+        "qt": "480",
+        "hr": "50",
+        "formula": "bazett"
+      },
+      "expected": {
+        "qtc": 438.1780460041329
+      },
+      "display": {
+        "qtc": "438"
+      },
+      "provenance": "Doc independent Python JSON qtc.V3-bazett"
+    },
+    {
+      "calculator": "qtc",
+      "id": "V3-fridericia",
+      "label": "QT480 HR50",
+      "inputs": {
+        "qt": "480",
+        "hr": "50",
+        "formula": "fridericia"
+      },
+      "expected": {
+        "qtc": 451.6972938628936
+      },
+      "display": {
+        "qtc": "452"
+      },
+      "provenance": "Doc independent Python JSON qtc.V3-fridericia"
+    },
+    {
+      "calculator": "qtc",
+      "id": "V3-framingham",
+      "label": "QT480 HR50",
+      "inputs": {
+        "qt": "480",
+        "hr": "50",
+        "formula": "framingham"
+      },
+      "expected": {
+        "qtc": 449.2
+      },
+      "display": {
+        "qtc": "449"
+      },
+      "provenance": "Doc independent Python JSON qtc.V3-framingham"
+    },
+    {
+      "calculator": "qtc",
+      "id": "V3-hodges",
+      "label": "QT480 HR50",
+      "inputs": {
+        "qt": "480",
+        "hr": "50",
+        "formula": "hodges"
+      },
+      "expected": {
+        "qtc": 462.5
+      },
+      "display": {
+        "qtc": "463"
+      },
+      "provenance": "Doc independent Python JSON qtc.V3-hodges"
+    },
+    {
+      "calculator": "homa1-b",
+      "id": "V1",
+      "label": "glu5.8 ins114",
+      "inputs": {
+        "glucose": "5.8",
+        "insulin": "114",
+        "fasting": "yes",
+        "exogenous": "no",
+        "population": "yes"
+      },
+      "expected": {
+        "beta": 165.21739130434784
+      },
+      "display": {
+        "beta": "165"
+      },
+      "provenance": "Doc independent Python JSON homaB.V1"
+    },
+    {
+      "calculator": "homa1-b",
+      "id": "V2",
+      "label": "glu5.0 ins60",
+      "inputs": {
+        "glucose": "5",
+        "insulin": "60",
+        "fasting": "yes",
+        "exogenous": "no",
+        "population": "yes"
+      },
+      "expected": {
+        "beta": 133.33333333333334
+      },
+      "display": {
+        "beta": "133"
+      },
+      "provenance": "Doc independent Python JSON homaB.V2"
+    },
+    {
+      "calculator": "homa1-b",
+      "id": "V3",
+      "label": "glu7.0 ins80",
+      "inputs": {
+        "glucose": "7",
+        "insulin": "80",
+        "fasting": "yes",
+        "exogenous": "no",
+        "population": "yes"
+      },
+      "expected": {
+        "beta": 76.19047619047619
+      },
+      "display": {
+        "beta": "76"
+      },
+      "provenance": "Doc independent Python JSON homaB.V3"
+    },
+    {
+      "calculator": "quicki",
+      "id": "V1",
+      "label": "glu5.8 ins114",
+      "inputs": {
+        "glucose": "5.8",
+        "insulin": "114",
+        "fasting": "yes",
+        "exogenous": "no",
+        "population": "yes"
+      },
+      "expected": {
+        "quicki": 0.30322878302107625
+      },
+      "display": {
+        "quicki": "0.303"
+      },
+      "provenance": "Doc independent Python JSON quicki.V1"
+    },
+    {
+      "calculator": "quicki",
+      "id": "V2",
+      "label": "glu5.0 ins60",
+      "inputs": {
+        "glucose": "5",
+        "insulin": "60",
+        "fasting": "yes",
+        "exogenous": "no",
+        "population": "yes"
+      },
+      "expected": {
+        "quicki": 0.3384520393876638
+      },
+      "display": {
+        "quicki": "0.338"
+      },
+      "provenance": "Doc independent Python JSON quicki.V2"
+    },
+    {
+      "calculator": "quicki",
+      "id": "V3",
+      "label": "glu6.5 ins90",
+      "inputs": {
+        "glucose": "6.5",
+        "insulin": "90",
+        "fasting": "yes",
+        "exogenous": "no",
+        "population": "yes"
+      },
+      "expected": {
+        "quicki": 0.30819841796522884
+      },
+      "display": {
+        "quicki": "0.308"
+      },
+      "provenance": "Doc independent Python JSON quicki.V3"
+    },
+    {
+      "calculator": "cha2ds2-vasc",
+      "id": "V1",
+      "label": "age70 F + CHF",
+      "inputs": {
+        "sex": "female",
+        "chf": "yes",
+        "hypertension": "no",
+        "diabetes": "no",
+        "stroke": "no",
+        "vascular": "no",
+        "af": "yes",
+        "ageBand": "65-74"
+      },
+      "expected": {
+        "score": 3
+      },
+      "display": {
+        "score": "3"
+      },
+      "provenance": "Doc independent Python JSON cha2ds2Vasc.V1"
+    },
+    {
+      "calculator": "cha2ds2-vasc",
+      "id": "V2",
+      "label": "age80 M + HTN + DM",
+      "inputs": {
+        "sex": "male",
+        "chf": "no",
+        "hypertension": "yes",
+        "diabetes": "yes",
+        "stroke": "no",
+        "vascular": "no",
+        "af": "yes",
+        "ageBand": "75plus"
+      },
+      "expected": {
+        "score": 4
+      },
+      "display": {
+        "score": "4"
+      },
+      "provenance": "Doc independent Python JSON cha2ds2Vasc.V2"
+    },
+    {
+      "calculator": "cha2ds2-vasc",
+      "id": "V3",
+      "label": "age50 F sex only",
+      "inputs": {
+        "sex": "female",
+        "chf": "no",
+        "hypertension": "no",
+        "diabetes": "no",
+        "stroke": "no",
+        "vascular": "no",
+        "af": "yes",
+        "ageBand": "under65"
+      },
+      "expected": {
+        "score": 1
+      },
+      "display": {
+        "score": "1"
+      },
+      "provenance": "Doc independent Python JSON cha2ds2Vasc.V3"
+    },
+    {
+      "calculator": "cha2ds2-vasc",
+      "id": "V4",
+      "label": "age74 M (65-74 band)",
+      "inputs": {
+        "sex": "male",
+        "chf": "no",
+        "hypertension": "no",
+        "diabetes": "no",
+        "stroke": "no",
+        "vascular": "no",
+        "af": "yes",
+        "ageBand": "65-74"
+      },
+      "expected": {
+        "score": 1
+      },
+      "display": {
+        "score": "1"
+      },
+      "provenance": "Doc independent Python JSON cha2ds2Vasc.V4"
+    },
+    {
+      "calculator": "cha2ds2-vasc",
+      "id": "V5",
+      "label": "age75 M (>=75 band)",
+      "inputs": {
+        "sex": "male",
+        "chf": "no",
+        "hypertension": "no",
+        "diabetes": "no",
+        "stroke": "no",
+        "vascular": "no",
+        "af": "yes",
+        "ageBand": "75plus"
+      },
+      "expected": {
+        "score": 2
+      },
+      "display": {
+        "score": "2"
+      },
+      "provenance": "Doc independent Python JSON cha2ds2Vasc.V5"
+    },
+    {
+      "calculator": "cha2ds2-vasc",
+      "id": "V6",
+      "label": "age80 F all (max)",
+      "inputs": {
+        "sex": "female",
+        "chf": "yes",
+        "hypertension": "yes",
+        "diabetes": "yes",
+        "stroke": "yes",
+        "vascular": "yes",
+        "af": "yes",
+        "ageBand": "75plus"
+      },
+      "expected": {
+        "score": 9
+      },
+      "display": {
+        "score": "9"
+      },
+      "provenance": "Doc independent Python JSON cha2ds2Vasc.V6"
+    },
+    {
+      "calculator": "cha2ds2-vasc",
+      "id": "V7",
+      "label": "age64 M none",
+      "inputs": {
+        "sex": "male",
+        "chf": "no",
+        "hypertension": "no",
+        "diabetes": "no",
+        "stroke": "no",
+        "vascular": "no",
+        "af": "yes",
+        "ageBand": "under65"
+      },
+      "expected": {
+        "score": 0
+      },
+      "display": {
+        "score": "0"
+      },
+      "provenance": "Doc independent Python JSON cha2ds2Vasc.V7"
+    },
+    {
+      "calculator": "has-bled",
+      "id": "V1",
+      "label": "H only",
+      "inputs": {
+        "hypertension": "yes",
+        "renal": "no",
+        "liver": "no",
+        "stroke": "no",
+        "bleeding": "no",
+        "age": "50",
+        "drugs": "no",
+        "alcohol": "no",
+        "af": "yes",
+        "anticoagulant": "vka",
+        "labile": "no"
+      },
+      "expected": {
+        "score": 1
+      },
+      "display": {
+        "score": "1"
+      },
+      "provenance": "Doc independent Python JSON hasBled.V1"
+    },
+    {
+      "calculator": "has-bled",
+      "id": "V2",
+      "label": "max (VKA, labile INR)",
+      "inputs": {
+        "hypertension": "yes",
+        "renal": "yes",
+        "liver": "yes",
+        "stroke": "yes",
+        "bleeding": "yes",
+        "age": "66",
+        "drugs": "yes",
+        "alcohol": "yes",
+        "af": "yes",
+        "anticoagulant": "vka",
+        "labile": "yes"
+      },
+      "expected": {
+        "score": 9
+      },
+      "display": {
+        "score": "9"
+      },
+      "provenance": "Doc independent Python JSON hasBled.V2"
+    },
+    {
+      "calculator": "has-bled",
+      "id": "V3",
+      "label": "elderly only (age 66)",
+      "inputs": {
+        "hypertension": "no",
+        "renal": "no",
+        "liver": "no",
+        "stroke": "no",
+        "bleeding": "no",
+        "age": "66",
+        "drugs": "no",
+        "alcohol": "no",
+        "af": "yes",
+        "anticoagulant": "vka",
+        "labile": "no"
+      },
+      "expected": {
+        "score": 1
+      },
+      "display": {
+        "score": "1"
+      },
+      "provenance": "Doc independent Python JSON hasBled.V3"
+    },
+    {
+      "calculator": "has-bled",
+      "id": "V4",
+      "label": "age 65 boundary (0 points)",
+      "inputs": {
+        "hypertension": "no",
+        "renal": "no",
+        "liver": "no",
+        "stroke": "no",
+        "bleeding": "no",
+        "age": "65",
+        "drugs": "no",
+        "alcohol": "no",
+        "af": "yes",
+        "anticoagulant": "vka",
+        "labile": "no"
+      },
+      "expected": {
+        "score": 0
+      },
+      "display": {
+        "score": "0"
+      },
+      "provenance": "Doc independent Python JSON hasBled.V4"
+    },
+    {
+      "calculator": "has-bled",
+      "id": "V5",
+      "label": "A+D double points",
+      "inputs": {
+        "hypertension": "no",
+        "renal": "yes",
+        "liver": "yes",
+        "stroke": "no",
+        "bleeding": "no",
+        "age": "50",
+        "drugs": "yes",
+        "alcohol": "yes",
+        "af": "yes",
+        "anticoagulant": "vka",
+        "labile": "no"
+      },
+      "expected": {
+        "score": 4
+      },
+      "display": {
+        "score": "4"
+      },
+      "provenance": "Doc independent Python JSON hasBled.V5"
+    },
+    {
+      "calculator": "has-bled",
+      "id": "V7",
+      "label": "VKA labile INR only",
+      "inputs": {
+        "hypertension": "no",
+        "renal": "no",
+        "liver": "no",
+        "stroke": "no",
+        "bleeding": "no",
+        "age": "50",
+        "drugs": "no",
+        "alcohol": "no",
+        "af": "yes",
+        "anticoagulant": "vka",
+        "labile": "yes"
+      },
+      "expected": {
+        "score": 1
+      },
+      "display": {
+        "score": "1"
+      },
+      "provenance": "Doc independent Python JSON hasBled.V7"
+    }
+  ],
+  "guards": [
+    {
+      "calculator": "bmi",
+      "id": "G1",
+      "inputs": {
+        "weight": "0",
+        "height": "175",
+        "age": "40",
+        "pregnantOrLactating": "no"
+      },
+      "reason": "weight<=0"
+    },
+    {
+      "calculator": "bmi",
+      "id": "G2",
+      "inputs": {
+        "weight": "70",
+        "height": "0",
+        "age": "40",
+        "pregnantOrLactating": "no"
+      },
+      "reason": "height<=0"
+    },
+    {
+      "calculator": "bsa-mosteller",
+      "id": "G1",
+      "inputs": {
+        "height": "0",
+        "weight": "70"
+      },
+      "reason": "height<=0"
+    },
+    {
+      "calculator": "bsa-mosteller",
+      "id": "G2",
+      "inputs": {
+        "height": "170",
+        "weight": "-1"
+      },
+      "reason": "weight<=0"
+    },
+    {
+      "calculator": "cockcroft-gault",
+      "id": "G1",
+      "inputs": {
+        "age": "17",
+        "weight": "70",
+        "creatinine": "90",
+        "sex": "male"
+      },
+      "reason": "unsupported age <18 (paediatric)"
+    },
+    {
+      "calculator": "cockcroft-gault",
+      "id": "G2",
+      "inputs": {
+        "age": "93",
+        "weight": "70",
+        "creatinine": "90",
+        "sex": "male"
+      },
+      "reason": "unsupported age >92 (derivation upper bound)"
+    },
+    {
+      "calculator": "cockcroft-gault",
+      "id": "G3",
+      "inputs": {
+        "age": "40",
+        "weight": "0",
+        "creatinine": "90",
+        "sex": "male"
+      },
+      "reason": "weight <= 0"
+    },
+    {
+      "calculator": "cockcroft-gault",
+      "id": "G4",
+      "inputs": {
+        "age": "40",
+        "weight": "70",
+        "creatinine": "0",
+        "sex": "male"
+      },
+      "reason": "serum creatinine <= 0"
+    },
+    {
+      "calculator": "fib4",
+      "id": "G1",
+      "inputs": {
+        "age": "50",
+        "ast": "30",
+        "alt": "0",
+        "platelets": "220"
+      },
+      "reason": "ALT <= 0 (sqrt undefined)"
+    },
+    {
+      "calculator": "fib4",
+      "id": "G2",
+      "inputs": {
+        "age": "50",
+        "ast": "30",
+        "alt": "40",
+        "platelets": "0"
+      },
+      "reason": "platelets <= 0"
+    },
+    {
+      "calculator": "fib4",
+      "id": "G3",
+      "inputs": {
+        "age": "17",
+        "ast": "30",
+        "alt": "40",
+        "platelets": "220"
+      },
+      "reason": "unsupported age <18 (paediatric)"
+    },
+    {
+      "calculator": "apri",
+      "id": "G1",
+      "inputs": {
+        "ast": "30",
+        "uln": "40",
+        "platelets": "0",
+        "acute": "no"
+      },
+      "reason": "platelets <= 0"
+    },
+    {
+      "calculator": "apri",
+      "id": "G2",
+      "inputs": {
+        "ast": "30",
+        "uln": "0",
+        "platelets": "220",
+        "acute": "no"
+      },
+      "reason": "ULN <= 0"
+    },
+    {
+      "calculator": "anion-gap",
+      "id": "G1",
+      "inputs": {
+        "sodium": "0",
+        "chloride": "105",
+        "bicarbonate": "24",
+        "convention": "exclude",
+        "potassium": "",
+        "albumin": "",
+        "reference": ""
+      },
+      "reason": "sodium <= 0"
+    },
+    {
+      "calculator": "anion-gap",
+      "id": "G2",
+      "inputs": {
+        "sodium": "140",
+        "chloride": "0",
+        "bicarbonate": "24",
+        "convention": "exclude",
+        "potassium": "",
+        "albumin": "",
+        "reference": ""
+      },
+      "reason": "chloride <= 0"
+    },
+    {
+      "calculator": "anion-gap",
+      "id": "G3",
+      "inputs": {
+        "sodium": "140",
+        "chloride": "105",
+        "bicarbonate": "0",
+        "convention": "exclude",
+        "potassium": "",
+        "albumin": "",
+        "reference": ""
+      },
+      "reason": "bicarbonate <= 0"
+    },
+    {
+      "calculator": "corrected-sodium",
+      "id": "G1",
+      "inputs": {
+        "sodium": "135",
+        "glucose": "0",
+        "formula": "katz"
+      },
+      "reason": "glucose <= 0"
+    },
+    {
+      "calculator": "corrected-sodium",
+      "id": "G2",
+      "inputs": {
+        "sodium": "0",
+        "glucose": "8",
+        "formula": "katz"
+      },
+      "reason": "sodium <= 0"
+    },
+    {
+      "calculator": "qtc",
+      "id": "G1",
+      "inputs": {
+        "qt": "0",
+        "hr": "60",
+        "formula": "bazett"
+      },
+      "reason": "QT <= 0"
+    },
+    {
+      "calculator": "qtc",
+      "id": "G2",
+      "inputs": {
+        "qt": "400",
+        "hr": "0",
+        "formula": "bazett"
+      },
+      "reason": "HR <= 0"
+    },
+    {
+      "calculator": "homa1-b",
+      "id": "G1",
+      "inputs": {
+        "glucose": "3.5",
+        "insulin": "60",
+        "fasting": "yes",
+        "exogenous": "no",
+        "population": "yes"
+      },
+      "reason": "glucose <= 3.5 (denominator <= 0)"
+    },
+    {
+      "calculator": "homa1-b",
+      "id": "G2",
+      "inputs": {
+        "glucose": "0",
+        "insulin": "60",
+        "fasting": "yes",
+        "exogenous": "no",
+        "population": "yes"
+      },
+      "reason": "glucose <= 0"
+    },
+    {
+      "calculator": "homa1-b",
+      "id": "G3",
+      "inputs": {
+        "glucose": "5",
+        "insulin": "0",
+        "fasting": "yes",
+        "exogenous": "no",
+        "population": "yes"
+      },
+      "reason": "insulin <= 0"
+    },
+    {
+      "calculator": "quicki",
+      "id": "G1",
+      "inputs": {
+        "glucose": "0",
+        "insulin": "60",
+        "fasting": "yes",
+        "exogenous": "no",
+        "population": "yes"
+      },
+      "reason": "glucose <= 0 (log undefined)"
+    },
+    {
+      "calculator": "quicki",
+      "id": "G2",
+      "inputs": {
+        "glucose": "5",
+        "insulin": "0",
+        "fasting": "yes",
+        "exogenous": "no",
+        "population": "yes"
+      },
+      "reason": "insulin <= 0 (log undefined)"
+    }
+  ],
+  "quarantined": [
+    {
+      "model": "hasBled",
+      "id": "V6",
+      "reason": "Source JSON score=1 contradicts age70(+1)+hypertension(+1). Not used as an oracle."
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+name: Public package checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-build-browser-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.23.4'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: git diff --exit-code
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - run: npm run test:browser:sdk
+      - run: npm run test:mutations
+      - name: Reproduce the distributable twice outside source
+        run: |
+          python3 scripts/release.py ../release-assets
+          python3 scripts/release.py ../release-assets-repeat
+          cmp ../release-assets/canadian-primary-care-0.3.0.zip ../release-assets-repeat/canadian-primary-care-0.3.0.zip
+          cmp ../release-assets/SHA256SUMS ../release-assets-repeat/SHA256SUMS
+          (cd ../release-assets && sha256sum -c SHA256SUMS)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: canadian-primary-care-0.3.0-preview
+          path: ../release-assets/
+          if-no-files-found: error
+  stock-hermes-admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: candidate
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: NousResearch/hermes-agent
+          ref: bf0203a794a07aac3ff764972ab9087baa4e4f4e # public v0.22.5 validator
+          path: hermes
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+      - name: Use upstream's public locked Python toolchain and core dependency setup
+        uses: ./hermes/.github/actions/setup-pm
+        with:
+          toolchain: python
+          extras: '[]'
+      - name: Validate with stock security and desktop admission gates
+        run: hermes plugins validate "$GITHUB_WORKSPACE/candidate" --install-deps

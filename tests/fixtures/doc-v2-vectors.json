@@ -1,0 +1,1129 @@
+{
+  "_meta": {
+    "title": "Canadian Primary Care v2 - full-double-precision synthetic vectors (all 12 additions)",
+    "author": "doc (clinical research bot)",
+    "accessDate": "2026-10-26",
+    "computation": "Independent Python 3 math stdlib; no production imports; no patient data.",
+    "precisionNote": "All numeric outputs are IEEE-754 binary64 (double), serialized as the shortest decimal that round-trips to the identical double (Python repr / json.dumps). JSON.parse in JS reproduces the exact same double. Derived floats compare EXACTLY only when the implementation mirrors the pinnedOperationOrder below; otherwise assert |actual-expected| <= 1e-9 (absolute) or use relative tolerance 1e-12. Integer scores compare exactly.",
+    "pinnedOperationOrder": {
+      "bmi": "weight / ((heightCm/100)*(heightCm/100))",
+      "bsa": "sqrt(heightCm*weightKg/3600)",
+      "cockcroftGault": "((140-ageYears)*weightKg*88.4)/(72*scrUmolL), then *0.85 if female",
+      "fib4": "(ageYears*astUperL)/(platelets109L*sqrt(altUperL))",
+      "apri": "(astUperL*100)/(astUlnUperL*platelets109L)  [algebraically identical to brief's ((AST/ULN)*100)/PLT, re-associated so boundary vectors land exactly on 0.5/1.5/2.0]",
+      "anionGap": "raw=na-(cl+hco3); withK=(na+k)-(cl+hco3); corrected=raw+0.25*(refAlbumin-albumin)",
+      "correctedSodium": "gluMgDl=glucoseMmolL*18.016; na+factor*(gluMgDl-100)/100",
+      "qtc": "rr=60/hrBpm; bazett=qt/sqrt(rr); fridericia=qt/rr^(1/3); framingham=(qt/1000+0.154*(1-rr))*1000; hodges=qt+1.75*(hr-60)",
+      "homaB": "(20*(insulinPmolL/6.0))/(glucoseMmolL-3.5)",
+      "quicki": "1/(log10(insulinPmolL/6.0)+log10(glucoseMmolL*18.016))"
+    },
+    "constants": {
+      "glucoseMmolLToMgDl": 18.016,
+      "creatinineUmolLToMgDl": 88.4,
+      "cgSiFactorMale": 1.2277777777777779,
+      "cgFemaleFactor": 0.85,
+      "insulinPmolLToMuL": 6.0,
+      "mostellerDivisor": 3600.0,
+      "duboisCoeff": 0.007184,
+      "figgeSlope": 0.25,
+      "figgeRefAlbuminGL_default": 44.0,
+      "figgeRefAlbuminGL_variant": 40.0,
+      "katzFactor": 1.6,
+      "hillierFactor": 2.4,
+      "qtcFraminghamSlope": 0.154,
+      "qtcHodgesMsPerBpm": 1.75,
+      "homaBNumerator": 20.0,
+      "homaBGlucoseOffset": 3.5
+    },
+    "resolutions": {
+      "fib4AgeAndAcuteDisease": "age<18 reject; age 18-34 valid+warning; age>=65 age-adjusted band; acute disease = non-blocking contraindication note (not a numeric guard)",
+      "bmiPregnancyLactationGate": "required Yes/No choice; Yes -> numeric BMI reported but weight class suppressed",
+      "hasBledLabileInrVsDoac": "3-state L: no/yes_vka/na_doac_none (DOAC or none -> N/A, scores 0, shown as N/A not silent No)",
+      "cockcroftGaultWeightBasis": "single clinician-supplied weight (kg); NO ideal/adjusted-weight formula computed; obesity caveat surfaced; clinician may enter an alternative weight basis directly"
+    }
+  },
+  "vectors": {
+    "bmi": {
+      "name": "Adult BMI",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "normal male",
+          "inputs": {
+            "weightKg": 70.0,
+            "heightCm": 175.0
+          },
+          "outputs": {
+            "bmi": 22.857142857142858
+          }
+        },
+        {
+          "id": "V2",
+          "label": "obese class I",
+          "inputs": {
+            "weightKg": 95.0,
+            "heightCm": 170.0
+          },
+          "outputs": {
+            "bmi": 32.871972318339104
+          }
+        },
+        {
+          "id": "V3",
+          "label": "underweight",
+          "inputs": {
+            "weightKg": 50.0,
+            "heightCm": 170.0
+          },
+          "outputs": {
+            "bmi": 17.301038062283737
+          }
+        },
+        {
+          "id": "V4",
+          "label": "boundary 25.0 -> overweight",
+          "inputs": {
+            "weightKg": 81.0,
+            "heightCm": 180.0
+          },
+          "outputs": {
+            "bmi": 25.0
+          }
+        },
+        {
+          "id": "V5",
+          "label": "boundary 30.0 -> obese I",
+          "inputs": {
+            "weightKg": 97.2,
+            "heightCm": 180.0
+          },
+          "outputs": {
+            "bmi": 30.0
+          }
+        },
+        {
+          "id": "V6",
+          "label": "normal female",
+          "inputs": {
+            "weightKg": 60.0,
+            "heightCm": 165.0
+          },
+          "outputs": {
+            "bmi": 22.03856749311295
+          }
+        },
+        {
+          "id": "V7",
+          "label": "pregnant/lactating (numeric only, no class)",
+          "inputs": {
+            "weightKg": 70.0,
+            "heightCm": 175.0,
+            "pregnantOrLactating": true
+          },
+          "outputs": {
+            "bmi": 22.857142857142858,
+            "class": "not_applicable"
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "weight<=0",
+          "inputs": {
+            "weightKg": 0,
+            "heightCm": 175.0
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "height<=0",
+          "inputs": {
+            "weightKg": 70.0,
+            "heightCm": 0.0
+          }
+        }
+      ],
+      "notes": "Eligibility gate: a REQUIRED choice field 'pregnantOrLactating' (Yes/No; blank blocks per engine rule). 'Yes' -> report numeric BMI (1 dp) but SUPPRESS the Health Canada/WHO weight class (render 'Weight classification not applicable during pregnancy or lactation (Health Canada 2003)'). 'No' -> full classification. Age >=18 is documented in eligibility text; BMI is arithmetically valid at any age but the adult classification bands require >=18."
+    },
+    "bsa": {
+      "name": "Body surface area (Mosteller)",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "170/70",
+          "inputs": {
+            "heightCm": 170.0,
+            "weightKg": 70.0
+          },
+          "outputs": {
+            "bsaM2": 1.818118685772619
+          }
+        },
+        {
+          "id": "V2",
+          "label": "180/80",
+          "inputs": {
+            "heightCm": 180.0,
+            "weightKg": 80.0
+          },
+          "outputs": {
+            "bsaM2": 2.0
+          }
+        },
+        {
+          "id": "V3",
+          "label": "160/50",
+          "inputs": {
+            "heightCm": 160.0,
+            "weightKg": 50.0
+          },
+          "outputs": {
+            "bsaM2": 1.4907119849998598
+          }
+        }
+      ],
+      "crosscheck": [
+        {
+          "id": "DuBois-V1",
+          "formula": "0.007184*h^0.725*w^0.425",
+          "inputs": {
+            "heightCm": 170.0,
+            "weightKg": 70.0
+          },
+          "outputs": {
+            "bsaM2": 1.809707801753247
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "height<=0",
+          "inputs": {
+            "heightCm": 0.0,
+            "weightKg": 70.0
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "weight<=0",
+          "inputs": {
+            "heightCm": 170.0,
+            "weightKg": -1.0
+          }
+        }
+      ]
+    },
+    "cockcroftGault": {
+      "name": "Cockcroft-Gault CrCl",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "normal male",
+          "inputs": {
+            "ageYears": 40,
+            "weightKg": 70.0,
+            "scrUmolL": 90.0,
+            "sex": "male"
+          },
+          "outputs": {
+            "crclMlMin": 95.49382716049382
+          }
+        },
+        {
+          "id": "V2",
+          "label": "normal female",
+          "inputs": {
+            "ageYears": 40,
+            "weightKg": 60.0,
+            "scrUmolL": 80.0,
+            "sex": "female"
+          },
+          "outputs": {
+            "crclMlMin": 78.27083333333333
+          }
+        },
+        {
+          "id": "V3",
+          "label": "elderly male (65)",
+          "inputs": {
+            "ageYears": 65,
+            "weightKg": 80.0,
+            "scrUmolL": 110.0,
+            "sex": "male"
+          },
+          "outputs": {
+            "crclMlMin": 66.96969696969697
+          }
+        },
+        {
+          "id": "V4",
+          "label": "elderly female (72)",
+          "inputs": {
+            "ageYears": 72,
+            "weightKg": 65.0,
+            "scrUmolL": 120.0,
+            "sex": "female"
+          },
+          "outputs": {
+            "crclMlMin": 38.439675925925926
+          }
+        },
+        {
+          "id": "V5a",
+          "label": "female-correction pair: male arm",
+          "inputs": {
+            "ageYears": 50,
+            "weightKg": 70.0,
+            "scrUmolL": 90.0,
+            "sex": "male"
+          },
+          "outputs": {
+            "crclMlMin": 85.94444444444444
+          }
+        },
+        {
+          "id": "V5b",
+          "label": "female-correction pair: female arm (x0.85)",
+          "inputs": {
+            "ageYears": 50,
+            "weightKg": 70.0,
+            "scrUmolL": 90.0,
+            "sex": "female"
+          },
+          "outputs": {
+            "crclMlMin": 73.05277777777778
+          }
+        },
+        {
+          "id": "V6",
+          "label": "age 18 lower boundary (male)",
+          "inputs": {
+            "ageYears": 18,
+            "weightKg": 70.0,
+            "scrUmolL": 90.0,
+            "sex": "male"
+          },
+          "outputs": {
+            "crclMlMin": 116.50246913580247
+          }
+        },
+        {
+          "id": "V7",
+          "label": "age 92 upper boundary (male)",
+          "inputs": {
+            "ageYears": 92,
+            "weightKg": 70.0,
+            "scrUmolL": 90.0,
+            "sex": "male"
+          },
+          "outputs": {
+            "crclMlMin": 45.837037037037035
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "unsupported age <18 (paediatric)",
+          "inputs": {
+            "ageYears": 17,
+            "weightKg": 70.0,
+            "scrUmolL": 90.0,
+            "sex": "male"
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "unsupported age >92 (derivation upper bound)",
+          "inputs": {
+            "ageYears": 93,
+            "weightKg": 70.0,
+            "scrUmolL": 90.0,
+            "sex": "male"
+          }
+        },
+        {
+          "id": "G3",
+          "reason": "weight <= 0",
+          "inputs": {
+            "ageYears": 40,
+            "weightKg": 0.0,
+            "scrUmolL": 90.0,
+            "sex": "male"
+          }
+        },
+        {
+          "id": "G4",
+          "reason": "serum creatinine <= 0",
+          "inputs": {
+            "ageYears": 40,
+            "weightKg": 70.0,
+            "scrUmolL": 0.0,
+            "sex": "male"
+          }
+        }
+      ]
+    },
+    "fib4": {
+      "name": "FIB-4",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "50/30/40/220",
+          "inputs": {
+            "ageYears": 50,
+            "astUperL": 30.0,
+            "altUperL": 40.0,
+            "platelets109L": 220.0
+          },
+          "outputs": {
+            "fib4": 1.0780492023301294
+          }
+        },
+        {
+          "id": "V2",
+          "label": "60/80/90/140",
+          "inputs": {
+            "ageYears": 60,
+            "astUperL": 80.0,
+            "altUperL": 90.0,
+            "platelets109L": 140.0
+          },
+          "outputs": {
+            "fib4": 3.6140316116210047
+          }
+        },
+        {
+          "id": "V3",
+          "label": "45/45/35/150",
+          "inputs": {
+            "ageYears": 45,
+            "astUperL": 45.0,
+            "altUperL": 35.0,
+            "platelets109L": 150.0
+          },
+          "outputs": {
+            "fib4": 2.2819164877669946
+          }
+        },
+        {
+          "id": "V4",
+          "label": "70/35/30/200 age>=65",
+          "inputs": {
+            "ageYears": 70,
+            "astUperL": 35.0,
+            "altUperL": 30.0,
+            "platelets109L": 200.0
+          },
+          "outputs": {
+            "fib4": 2.236533776479428
+          }
+        },
+        {
+          "id": "V5",
+          "label": "30/35/30/200 age<35 (warning zone)",
+          "inputs": {
+            "ageYears": 30,
+            "astUperL": 35.0,
+            "altUperL": 30.0,
+            "platelets109L": 200.0
+          },
+          "outputs": {
+            "fib4": 0.9585144756340407
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "ALT <= 0 (sqrt undefined)",
+          "inputs": {
+            "ageYears": 50,
+            "astUperL": 30.0,
+            "altUperL": 0.0,
+            "platelets109L": 220.0
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "platelets <= 0",
+          "inputs": {
+            "ageYears": 50,
+            "astUperL": 30.0,
+            "altUperL": 40.0,
+            "platelets109L": 0.0
+          }
+        },
+        {
+          "id": "G3",
+          "reason": "unsupported age <18 (paediatric)",
+          "inputs": {
+            "ageYears": 17,
+            "astUperL": 30.0,
+            "altUperL": 40.0,
+            "platelets109L": 220.0
+          }
+        }
+      ],
+      "notes": "Age guard vs warning: age <18 -> unsupported reject (paediatric). Age 18-34 -> VALID but render non-blocking warning 'less reliable below age 35'. Age >=65 -> use age-adjusted low threshold <2.0 (keep >2.67 high); NOT a warning. Acute disease (acute hepatitis/transaminitis) is NOT detectable from inputs -> non-blocking contraindication note in interpretation text, never a numeric reject based on AST/ALT magnitude."
+    },
+    "apri": {
+      "name": "APRI",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "30/40/220",
+          "inputs": {
+            "astUperL": 30.0,
+            "astUlnUperL": 40.0,
+            "platelets109L": 220.0
+          },
+          "outputs": {
+            "apri": 0.3409090909090909
+          }
+        },
+        {
+          "id": "V2",
+          "label": "110/40/110",
+          "inputs": {
+            "astUperL": 110.0,
+            "astUlnUperL": 40.0,
+            "platelets109L": 110.0
+          },
+          "outputs": {
+            "apri": 2.5
+          }
+        },
+        {
+          "id": "V3",
+          "label": "boundary 0.5",
+          "inputs": {
+            "astUperL": 44.0,
+            "astUlnUperL": 40.0,
+            "platelets109L": 220.0
+          },
+          "outputs": {
+            "apri": 0.5
+          }
+        },
+        {
+          "id": "V4",
+          "label": "boundary 1.5",
+          "inputs": {
+            "astUperL": 132.0,
+            "astUlnUperL": 40.0,
+            "platelets109L": 220.0
+          },
+          "outputs": {
+            "apri": 1.5
+          }
+        },
+        {
+          "id": "V5",
+          "label": "boundary 2.0",
+          "inputs": {
+            "astUperL": 88.0,
+            "astUlnUperL": 40.0,
+            "platelets109L": 110.0
+          },
+          "outputs": {
+            "apri": 2.0
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "platelets <= 0",
+          "inputs": {
+            "astUperL": 30.0,
+            "astUlnUperL": 40.0,
+            "platelets109L": 0.0
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "ULN <= 0",
+          "inputs": {
+            "astUperL": 30.0,
+            "astUlnUperL": 0.0,
+            "platelets109L": 220.0
+          }
+        }
+      ]
+    },
+    "anionGap": {
+      "name": "Anion gap",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "no K",
+          "inputs": {
+            "na": 140.0,
+            "cl": 105.0,
+            "hco3": 24.0
+          },
+          "outputs": {
+            "raw": 11.0
+          }
+        },
+        {
+          "id": "V2",
+          "label": "with K",
+          "inputs": {
+            "na": 138.0,
+            "k": 4.5,
+            "cl": 100.0,
+            "hco3": 12.0
+          },
+          "outputs": {
+            "withK": 30.5
+          }
+        },
+        {
+          "id": "V3",
+          "label": "hypoalbuminaemia (alb 25 g/L)",
+          "inputs": {
+            "na": 140.0,
+            "cl": 110.0,
+            "hco3": 22.0,
+            "albuminGL": 25.0
+          },
+          "outputs": {
+            "raw": 8.0,
+            "correctedRef44": 12.75,
+            "correctedRef40": 11.75
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "sodium <= 0",
+          "inputs": {
+            "na": 0.0,
+            "cl": 105.0,
+            "hco3": 24.0
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "chloride <= 0",
+          "inputs": {
+            "na": 140.0,
+            "cl": 0.0,
+            "hco3": 24.0
+          }
+        },
+        {
+          "id": "G3",
+          "reason": "bicarbonate <= 0",
+          "inputs": {
+            "na": 140.0,
+            "cl": 105.0,
+            "hco3": 0.0
+          }
+        }
+      ]
+    },
+    "correctedSodium": {
+      "name": "Glucose-corrected sodium",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "Na128 glu30",
+          "inputs": {
+            "naMmolL": 128.0,
+            "glucoseMmolL": 30.0
+          },
+          "outputs": {
+            "katz": 135.04767999999999,
+            "hillier": 138.57152
+          }
+        },
+        {
+          "id": "V2",
+          "label": "Na135 glu8",
+          "inputs": {
+            "naMmolL": 135.0,
+            "glucoseMmolL": 8.0
+          },
+          "outputs": {
+            "katz": 135.706048,
+            "hillier": 136.059072
+          }
+        },
+        {
+          "id": "V3",
+          "label": "Na140 glu45",
+          "inputs": {
+            "naMmolL": 140.0,
+            "glucoseMmolL": 45.0
+          },
+          "outputs": {
+            "katz": 151.37152,
+            "hillier": 157.05728
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "glucose <= 0",
+          "inputs": {
+            "naMmolL": 135.0,
+            "glucoseMmolL": 0.0
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "sodium <= 0",
+          "inputs": {
+            "naMmolL": 0.0,
+            "glucoseMmolL": 8.0
+          }
+        }
+      ],
+      "notes": "Non-blocking flag (not a reject): when glucose_mg/dL <= 100 (i.e. glucose <= ~5.55 mmol/L), no hyperglycaemic correction is indicated; render 'no hyperglycaemia correction indicated' rather than silently returning a lower sodium. Hillier >400 mg/dL (~22.2 mmol/L) caveat surfaced in interpretation, not silently applied."
+    },
+    "qtc": {
+      "name": "QTc (four variants)",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "QT400 HR60",
+          "inputs": {
+            "qtMs": 400.0,
+            "hrBpm": 60.0
+          },
+          "outputs": {
+            "bazett": 400.0,
+            "fridericia": 400.0,
+            "framinghamSagie": 400.0,
+            "hodges": 400.0
+          }
+        },
+        {
+          "id": "V2",
+          "label": "QT360 HR100",
+          "inputs": {
+            "qtMs": 360.0,
+            "hrBpm": 100.0
+          },
+          "outputs": {
+            "bazett": 464.75800154489,
+            "fridericia": 426.8271965388075,
+            "framinghamSagie": 421.59999999999997,
+            "hodges": 430.0
+          }
+        },
+        {
+          "id": "V3",
+          "label": "QT480 HR50",
+          "inputs": {
+            "qtMs": 480.0,
+            "hrBpm": 50.0
+          },
+          "outputs": {
+            "bazett": 438.1780460041329,
+            "fridericia": 451.6972938628936,
+            "framinghamSagie": 449.2,
+            "hodges": 462.5
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "QT <= 0",
+          "inputs": {
+            "qtMs": 0.0,
+            "hrBpm": 60.0
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "HR <= 0",
+          "inputs": {
+            "qtMs": 400.0,
+            "hrBpm": 0.0
+          }
+        }
+      ]
+    },
+    "homaB": {
+      "name": "HOMA-B (HOMA1)",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "glu5.8 ins114",
+          "inputs": {
+            "glucoseMmolL": 5.8,
+            "insulinPmolL": 114.0
+          },
+          "outputs": {
+            "homaBPercent": 165.21739130434784,
+            "insulinMuL": 19.0
+          }
+        },
+        {
+          "id": "V2",
+          "label": "glu5.0 ins60",
+          "inputs": {
+            "glucoseMmolL": 5.0,
+            "insulinPmolL": 60.0
+          },
+          "outputs": {
+            "homaBPercent": 133.33333333333334,
+            "insulinMuL": 10.0
+          }
+        },
+        {
+          "id": "V3",
+          "label": "glu7.0 ins80",
+          "inputs": {
+            "glucoseMmolL": 7.0,
+            "insulinPmolL": 80.0
+          },
+          "outputs": {
+            "homaBPercent": 76.19047619047619,
+            "insulinMuL": 13.333333333333334
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "glucose <= 3.5 (denominator <= 0)",
+          "inputs": {
+            "glucoseMmolL": 3.5,
+            "insulinPmolL": 60.0
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "glucose <= 0",
+          "inputs": {
+            "glucoseMmolL": 0.0,
+            "insulinPmolL": 60.0
+          }
+        },
+        {
+          "id": "G3",
+          "reason": "insulin <= 0",
+          "inputs": {
+            "glucoseMmolL": 5.0,
+            "insulinPmolL": 0.0
+          }
+        }
+      ]
+    },
+    "quicki": {
+      "name": "QUICKI",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "glu5.8 ins114",
+          "inputs": {
+            "glucoseMmolL": 5.8,
+            "insulinPmolL": 114.0
+          },
+          "outputs": {
+            "quicki": 0.30322878302107625
+          }
+        },
+        {
+          "id": "V2",
+          "label": "glu5.0 ins60",
+          "inputs": {
+            "glucoseMmolL": 5.0,
+            "insulinPmolL": 60.0
+          },
+          "outputs": {
+            "quicki": 0.3384520393876638
+          }
+        },
+        {
+          "id": "V3",
+          "label": "glu6.5 ins90",
+          "inputs": {
+            "glucoseMmolL": 6.5,
+            "insulinPmolL": 90.0
+          },
+          "outputs": {
+            "quicki": 0.30819841796522884
+          }
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "reason": "glucose <= 0 (log undefined)",
+          "inputs": {
+            "glucoseMmolL": 0.0,
+            "insulinPmolL": 60.0
+          }
+        },
+        {
+          "id": "G2",
+          "reason": "insulin <= 0 (log undefined)",
+          "inputs": {
+            "glucoseMmolL": 5.0,
+            "insulinPmolL": 0.0
+          }
+        }
+      ]
+    },
+    "cha2ds2Vasc": {
+      "name": "CHA2DS2-VASc",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "age70 F + CHF",
+          "inputs": {
+            "ageYears": 70,
+            "sex": "F",
+            "chf": true,
+            "htn": false,
+            "dm": false,
+            "strokeTia": false,
+            "vascular": false
+          },
+          "outputs": {
+            "score": 3
+          }
+        },
+        {
+          "id": "V2",
+          "label": "age80 M + HTN + DM",
+          "inputs": {
+            "ageYears": 80,
+            "sex": "M",
+            "chf": false,
+            "htn": true,
+            "dm": true,
+            "strokeTia": false,
+            "vascular": false
+          },
+          "outputs": {
+            "score": 4
+          }
+        },
+        {
+          "id": "V3",
+          "label": "age50 F sex only",
+          "inputs": {
+            "ageYears": 50,
+            "sex": "F",
+            "chf": false,
+            "htn": false,
+            "dm": false,
+            "strokeTia": false,
+            "vascular": false
+          },
+          "outputs": {
+            "score": 1
+          }
+        },
+        {
+          "id": "V4",
+          "label": "age74 M (65-74 band)",
+          "inputs": {
+            "ageYears": 74,
+            "sex": "M",
+            "chf": false,
+            "htn": false,
+            "dm": false,
+            "strokeTia": false,
+            "vascular": false
+          },
+          "outputs": {
+            "score": 1
+          }
+        },
+        {
+          "id": "V5",
+          "label": "age75 M (>=75 band)",
+          "inputs": {
+            "ageYears": 75,
+            "sex": "M",
+            "chf": false,
+            "htn": false,
+            "dm": false,
+            "strokeTia": false,
+            "vascular": false
+          },
+          "outputs": {
+            "score": 2
+          }
+        },
+        {
+          "id": "V6",
+          "label": "age80 F all (max)",
+          "inputs": {
+            "ageYears": 80,
+            "sex": "F",
+            "chf": true,
+            "htn": true,
+            "dm": true,
+            "strokeTia": true,
+            "vascular": true
+          },
+          "outputs": {
+            "score": 9
+          }
+        },
+        {
+          "id": "V7",
+          "label": "age64 M none",
+          "inputs": {
+            "ageYears": 64,
+            "sex": "M",
+            "chf": false,
+            "htn": false,
+            "dm": false,
+            "strokeTia": false,
+            "vascular": false
+          },
+          "outputs": {
+            "score": 0
+          }
+        }
+      ]
+    },
+    "hasBled": {
+      "name": "HAS-BLED (L is 3-state)",
+      "valid": [
+        {
+          "id": "V1",
+          "label": "H only",
+          "inputs": {
+            "hypertension": true,
+            "renal": false,
+            "liver": false,
+            "stroke": false,
+            "bleeding": false,
+            "labileInr": "no",
+            "ageYears": 50,
+            "drugs": false,
+            "alcohol": false
+          },
+          "outputs": {
+            "score": 1
+          }
+        },
+        {
+          "id": "V2",
+          "label": "max (VKA, labile INR)",
+          "inputs": {
+            "hypertension": true,
+            "renal": true,
+            "liver": true,
+            "stroke": true,
+            "bleeding": true,
+            "labileInr": "yes_vka",
+            "ageYears": 66,
+            "drugs": true,
+            "alcohol": true
+          },
+          "outputs": {
+            "score": 9
+          }
+        },
+        {
+          "id": "V3",
+          "label": "elderly only (age 66)",
+          "inputs": {
+            "hypertension": false,
+            "renal": false,
+            "liver": false,
+            "stroke": false,
+            "bleeding": false,
+            "labileInr": "no",
+            "ageYears": 66,
+            "drugs": false,
+            "alcohol": false
+          },
+          "outputs": {
+            "score": 1
+          }
+        },
+        {
+          "id": "V4",
+          "label": "age 65 boundary (0 points)",
+          "inputs": {
+            "hypertension": false,
+            "renal": false,
+            "liver": false,
+            "stroke": false,
+            "bleeding": false,
+            "labileInr": "no",
+            "ageYears": 65,
+            "drugs": false,
+            "alcohol": false
+          },
+          "outputs": {
+            "score": 0
+          }
+        },
+        {
+          "id": "V5",
+          "label": "A+D double points",
+          "inputs": {
+            "hypertension": false,
+            "renal": true,
+            "liver": true,
+            "stroke": false,
+            "bleeding": false,
+            "labileInr": "no",
+            "ageYears": 50,
+            "drugs": true,
+            "alcohol": true
+          },
+          "outputs": {
+            "score": 4
+          }
+        },
+        {
+          "id": "V6",
+          "label": "DOAC: labile INR N/A -> 0",
+          "inputs": {
+            "hypertension": true,
+            "renal": false,
+            "liver": false,
+            "stroke": false,
+            "bleeding": false,
+            "labileInr": "na_doac_none",
+            "ageYears": 70,
+            "drugs": false,
+            "alcohol": false
+          },
+          "outputs": {
+            "score": 1
+          }
+        },
+        {
+          "id": "V7",
+          "label": "VKA labile INR only",
+          "inputs": {
+            "hypertension": false,
+            "renal": false,
+            "liver": false,
+            "stroke": false,
+            "bleeding": false,
+            "labileInr": "yes_vka",
+            "ageYears": 50,
+            "drugs": false,
+            "alcohol": false
+          },
+          "outputs": {
+            "score": 1
+          }
+        }
+      ],
+      "notes": "L (labile INR) is VKA-only. Implement as a 3-state scored choice: 'no'->0, 'yes_vka'->+1 (uncontrolled INR / poor TTR <60% on warfarin), 'na_doac_none'->0 and rendered explicitly as 'N/A' in the result (distinct from a silent/unanswered 'No'). Total max stays 9. No separate anticoagulant-type field is required."
+    }
+  }
+}

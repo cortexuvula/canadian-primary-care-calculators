@@ -1,0 +1,15 @@
+import {build} from 'esbuild';
+import {writeFile,readFile,mkdir,copyFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+const result=await build({entryPoints:['src/plugin.jsx'],outfile:'plugin.js',bundle:true,format:'esm',platform:'browser',target:'es2022',jsx:'automatic',external:['@hermes/plugin-sdk','react','react/jsx-runtime'],metafile:true,legalComments:'none',charset:'utf8'});
+const allowed=new Set(['@hermes/plugin-sdk','react','react/jsx-runtime']);
+const imports=Object.values(result.metafile.outputs).flatMap(o=>o.imports);
+if(imports.some(i=>!i.external||!allowed.has(i.path)))throw new Error('Unexpected runtime import');
+const bytes=await readFile('plugin.js');
+const expected=(await readFile('runtime.sha256','utf8')).trim();
+const actual=createHash('sha256').update(bytes).digest('hex');
+if(actual!==expected)throw new Error(`Runtime changed: ${actual}; review source and runtime before updating runtime.sha256`);
+await mkdir('desktop',{recursive:true});await copyFile('plugin.js','desktop/plugin.js');
+await mkdir('.artifacts',{recursive:true});
+await writeFile('.artifacts/build-imports.json',JSON.stringify({runtimeImports:[...new Set(imports.map(i=>i.path))],bytes:bytes.length,sha256:actual},null,2)+'\n');
+console.log('Built byte-identical root and desktop runtime: '+actual);
