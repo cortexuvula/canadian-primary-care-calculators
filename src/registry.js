@@ -63,5 +63,5 @@ export function searchCatalog(query) {
   return q ? registry.filter(d=>[d.name,d.category,...d.aliases].some(s=>s.toLowerCase().includes(q))) : registry;
 }
 export function summary(d,result) {
-  return [d.name,d.version,d.endpoint,...d.outputs.filter(o=>result[o.key]!==null&&result[o.key]!==undefined).map(o=>`${o.label}: ${result[o.key].toFixed(o.decimals)} ${o.unit}`),d.interpretation(result),d.applicability,'Clinician decision support; verify applicability.'].join('\n');
+  return [d.name,d.version,d.endpoint,...(d.resultOutputs?d.resultOutputs(result):d.outputs).filter(o=>result[o.key]!==null&&result[o.key]!==undefined).map(o=>`${o.label}: ${result[o.key].toFixed(o.decimals)} ${o.unit}`),d.interpretation(result),d.applicability,'Clinician decision support; verify applicability.'].join('\n');
 }

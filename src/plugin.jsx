@@ -66,7 +66,7 @@ function Calculator({definition:d,ctx,active}) {
     <p role="status" aria-live="polite" className={snapshot?'cpc-status cpc-sr-only':'cpc-status'}>{view.status}</p></div><div className="cpc-output-area">
     {snapshot&&<section className="cpc-result" aria-label="Result">
       <h3>Result</h3>
-      <dl className="cpc-values">{d.outputs.filter(o=>snapshot.result[o.key]!==null&&snapshot.result[o.key]!==undefined).map(o=><div key={o.key}><dt>{o.label}</dt><dd>{snapshot.result[o.key].toFixed(o.decimals)} <span>{o.unit}</span></dd></div>)}</dl>
+      <dl className="cpc-values">{(d.resultOutputs?d.resultOutputs(snapshot.result):d.outputs).filter(o=>snapshot.result[o.key]!==null&&snapshot.result[o.key]!==undefined).map(o=><div key={o.key}><dt>{o.label}</dt><dd>{snapshot.result[o.key].toFixed(o.decimals)} <span>{o.unit}</span></dd></div>)}</dl>
       <p className="cpc-muted">{d.version}</p><p>{d.endpoint}</p>
       <p>{d.interpretation(snapshot.result)}</p><p className="cpc-help">{d.applicability}</p>
       <Button type="button" variant="outline" disabled={copyStatus==='Copying…'} onClick={copy}>Copy result</Button>

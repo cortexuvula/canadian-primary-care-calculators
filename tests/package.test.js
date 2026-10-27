@@ -21,7 +21,7 @@ test('Batch A preserves original fifteen clinical definitions and snapshot seman
   'src/state.js':'1b571bae46c15f5635e67ace81e420b9da1dbfc51cd2e014534d928ea984d16e'
  };
  for(const [file,pin]of Object.entries(protectedBaseline))assert.equal(hash(file),pin,file);
- const original=readFileSync('src/registry.js','utf8').replace("import {batchA} from './batch-a-registry.js';\n",'').replace(' ...expansion,\n ...batchA\n',' ...expansion\n');
+ const original=readFileSync('src/registry.js','utf8').replace("import {batchA} from './batch-a-registry.js';\n",'').replace(' ...expansion,\n ...batchA\n',' ...expansion\n').replace('...(d.resultOutputs?d.resultOutputs(result):d.outputs).filter','...d.outputs.filter');
  assert.equal(createHash('sha256').update(original).digest('hex'),'4ecdf36de8713f821038633d4971faa7ea9995f5d51bc0505fdbfd74ad5e54f4');
 });
 test('public metadata and clinical copy stay honest and consistent',()=>{

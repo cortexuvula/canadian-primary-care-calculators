@@ -4,6 +4,10 @@ import {registry,summary,favourites,searchCatalog} from '../src/registry.js';
 import {initial,transition} from '../src/state.js';
 import {inputGroups} from '../src/ui-groups.js';
 import {raw,inputs} from './batch-a-support.js';
+for(const id of ['urine-acr','urine-pcr'])test(`Batch A ${id} selected conventional unit leads qualified copy`,()=>{
+ const d=registry.find(d=>d.id===id),result=d.calculate({...inputs(id,raw.vectors[id].valid[0].inputs),outputUnit:'mg/g'});
+ const lines=summary(d,result).split('\n');assert.match(lines[3],id==='urine-acr'?/^ACR: 27 mg\/g$/:/^PCR: 265 mg\/g$/);
+});
 test('Batch A adds exactly eleven real modules, preserving the fifteen baseline IDs',()=>{
  assert.equal(registry.length,26);
  assert.deepEqual(registry.slice(15).map(d=>d.id),Object.keys(raw.vectors));
