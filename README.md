@@ -53,6 +53,10 @@ These depict the compiled runtime in a browser harness, **not a live Desktop ins
 ![Synthetic BSA result, dark appearance](docs/screenshots/bsa-dark.png)
 ![Synthetic narrow library](docs/screenshots/library-narrow.png)
 
+![Synthetic gestational-age civil-date controls, dark appearance](docs/screenshots/ga-dark.png)
+![Synthetic chained-likelihood-ratio calculation, light appearance](docs/screenshots/lr-light.png)
+[View synthetic 320-pixel ACR example](docs/screenshots/acr-narrow.png)
+
 ## Develop and verify
 
 Node.js 22 or newer, npm, and Python 3 (release packaging and its regression test):
